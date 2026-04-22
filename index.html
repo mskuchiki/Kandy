@@ -485,6 +485,10 @@
     }
 
     function renderGrid() {
+      if (state.holdTimer !== null) {
+        clearTimeout(state.holdTimer);
+        state.holdTimer = null;
+      }
       gridEl.innerHTML = '';
       state.gridKanji.forEach(kanji => {
         const cell = document.createElement('div');
@@ -495,9 +499,9 @@
         cell.addEventListener('pointerdown', e => {
           e.preventDefault();
           if (state.mode !== 'idle' && state.mode !== 'selecting') return;
-          cell.setPointerCapture(e.pointerId);
 
           if (state.mode === 'idle') {
+            cell.setPointerCapture(e.pointerId);
             // Start hold timer
             state.holdTimer = setTimeout(() => {
               state.holdTimer = null;
@@ -538,7 +542,7 @@
       selectionStrip.classList.toggle('visible', state.mode === 'selecting');
       selectedDisplay.textContent = state.selected.join(' ');
       // Highlight selected cells
-      document.querySelectorAll('.kanji-cell').forEach(cell => {
+      gridEl.querySelectorAll('.kanji-cell').forEach(cell => {
         cell.classList.toggle('selected', state.selected.includes(cell.dataset.kanji));
       });
     }
