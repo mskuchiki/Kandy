@@ -392,6 +392,11 @@
 
     $('btn-got-it').addEventListener('click', dismissFeedback);
 
+    $('btn-restart').addEventListener('click', () => {
+      completeScreen.classList.remove('visible');
+      initSession(state.allWords, state.kanjiPool);
+    });
+
     // ── Session init ──────────────────────────────────────────────────────────
     function initSession(allWords, kanjiPool) {
       state.allWords      = allWords;
@@ -654,8 +659,20 @@
     }
 
     function showComplete() {
-      // Stub — replaced in Task 8
-      console.log('Session complete!');
+      state.mode = 'complete';
+      completeScreen.classList.add('visible');
+
+      const total   = state.allWords.filter(w => w.target).length;
+      const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+      const mins    = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs    = String(elapsed % 60).padStart(2, '0');
+      const accuracy = state.answeredCount > 0
+        ? Math.round(((state.answeredCount - state.wrongCount) / state.answeredCount) * 100)
+        : 100;
+
+      $('stat-cleared').textContent  = `Words cleared: ${total} / ${total}`;
+      $('stat-accuracy').textContent = `Accuracy: ${accuracy}%`;
+      $('stat-time').textContent     = `Time: ${mins}:${secs}`;
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────
