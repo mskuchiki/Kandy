@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Kanji Grid Study</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-bg: #ffffff;
+      --color-text: #1a1a1a;
+      --color-cell-bg: #f8f8f8;
+      --color-cell-border: #ddd;
+      --color-cell-selected-bg: #e3f0ff;
+      --color-cell-selected-border: #4a90d9;
+      --color-correct: #2e7d32;
+      --color-correct-bg: #e8f5e9;
+      --color-wrong: #c62828;
+      --color-wrong-bg: #ffebee;
+      --color-progress: #4a90d9;
+      --font-jp: 'Hiragino Sans', 'Meiryo', 'Noto Sans JP', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-jp);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Progress bar ─────────────────────── */
+    #progress-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    #progress-track {
+      flex: 1;
+      height: 6px;
+      background: #eee;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      background: var(--color-progress);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    /* ── Kanji grid ───────────────────────── */
+    #grid-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .kanji-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(28px, 10vw, 52px);
+      background: var(--color-cell-bg);
+      border: 1px solid var(--color-cell-border);
+      border-radius: 6px;
+      cursor: pointer;
+      touch-action: none;
+      transition: background 0.1s, border-color 0.1s, transform 0.1s;
+    }
+
+    .kanji-cell:active { transform: scale(0.93); }
+
+    .kanji-cell.selected {
+      background: var(--color-cell-selected-bg);
+      border: 2px solid var(--color-cell-selected-border);
+      font-weight: bold;
+    }
+
+    /* ── Selection strip ──────────────────── */
+    #selection-strip {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background: #f0f4ff;
+      border: 1px solid #c0d0f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    #selection-strip.visible { display: flex; }
+
+    #selected-display {
+      font-size: 24px;
+      flex: 1;
+      letter-spacing: 4px;
+    }
+
+    .strip-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-family: var(--font-jp);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    #btn-confirm { background: #4a90d9; color: #fff; }
+    #btn-cancel  { background: #fff; color: #666; border: 1px solid #ccc; }
+
+    /* ── Toast ────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: rgba(0,0,0,0.72);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      z-index: 500;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Question modal ───────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #modal-overlay.visible { display: flex; }
+
+    #modal-box {
+      background: #fff;
+      border: 2px solid #1a1a1a;
+      border-radius: 14px;
+      padding: 28px 20px;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+    }
+
+    #modal-word {
+      text-align: center;
+      font-size: 52px;
+      font-weight: bold;
+      margin-bottom: 24px;
+      letter-spacing: 4px;
+    }
+
+    #choices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .choice-btn {
+      background: #f5f5f5;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      padding: 14px 8px;
+      font-family: var(--font-jp);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .choice-btn:hover { background: #eaeaea; }
+
+    /* ── Feedback overlay ─────────────────── */
+    #feedback-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #feedback-overlay.visible { display: flex; }
+    #feedback-overlay.correct { background: rgba(232,245,233,0.96); }
+    #feedback-overlay.wrong   { background: rgba(255,235,238,0.96); }
+
+    #feedback-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    #feedback-icon   { font-size: 48px; margin-bottom: 12px; }
+    #feedback-reading { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
+    #feedback-meaning { font-size: 16px; color: #555; margin-bottom: 20px; }
+
+    #feedback-overlay.correct #feedback-reading { color: var(--color-correct); }
+    #feedback-overlay.wrong   #feedback-reading { color: var(--color-wrong); }
+
+    #btn-got-it {
+      display: none;
+      background: var(--color-wrong);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-family: var(--font-jp);
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    #feedback-overlay.wrong #btn-got-it { display: inline-block; }
+
+    /* ── Session complete ─────────────────── */
+    #complete-screen {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+      gap: 14px;
+    }
+
+    #complete-screen.visible { display: flex; }
+    #complete-screen h1  { font-size: 32px; }
+    .stat-row            { font-size: 16px; color: #444; }
+
+    #btn-restart {
+      margin-top: 16px;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 36px;
+      font-family: var(--font-jp);
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="progress-bar">
+      <span id="progress-text">0 / 25</span>
+      <div id="progress-track"><div id="progress-fill"></div></div>
+    </div>
+    <div id="grid-container"></div>
+    <div id="selection-strip">
+      <span style="font-size:12px;color:#666;">Selected:</span>
+      <span id="selected-display"></span>
+      <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
+      <button id="btn-cancel"  class="strip-btn">✕ Cancel</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="modal-overlay">
+    <div id="modal-box">
+      <div id="modal-word"></div>
+      <div id="choices-grid"></div>
+    </div>
+  </div>
+
+  <div id="feedback-overlay">
+    <div id="feedback-box">
+      <div id="feedback-icon"></div>
+      <div id="feedback-reading"></div>
+      <div id="feedback-meaning"></div>
+      <button id="btn-got-it">Got it</button>
+    </div>
+  </div>
+
+  <div id="complete-screen">
+    <h1>Session Complete!</h1>
+    <div class="stat-row" id="stat-cleared"></div>
+    <div class="stat-row" id="stat-accuracy"></div>
+    <div class="stat-row" id="stat-time"></div>
+    <button id="btn-restart">Start Over</button>
+  </div>
+
+  <script type="module">
+    // JS added in subsequent tasks
+  </script>
+</body>
+</html>
