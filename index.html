@@ -398,10 +398,56 @@
       render();
     }
 
-    // ── Grid build (stub — replaced in Task 3) ────────────────────────────────
+    // ── Grid build ────────────────────────────────────────────────────────────
     function buildGrid() {
-      state.gridKanji    = state.kanjiPool.slice(0, 25);
-      state.formableWords = [];
+      let best = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = tryBuildGrid();
+        if (!best || result.formableWords.length > best.formableWords.length) best = result;
+        if (best.formableWords.length >= 5) break;
+      }
+      state.gridKanji    = best.gridKanji;
+      state.formableWords = best.formableWords;
+    }
+
+    function tryBuildGrid() {
+      const MAX = 25;
+      const kanjiSet = new Set();
+
+      // 1. Focus word: random pending target
+      const focus = state.pendingTargets[Math.floor(Math.random() * state.pendingTargets.length)];
+      for (const ch of focus._stripped) kanjiSet.add(ch);
+
+      // 2. Add complete words greedily until 25 unique kanji
+      const pool = shuffle(state.allWords);
+      for (const word of pool) {
+        if (kanjiSet.size >= MAX) break;
+        if (word._stripped.length === 0) continue;
+        const newChars = [...word._stripped].filter(ch => !kanjiSet.has(ch));
+        if (newChars.length === 0) continue;               // already fully representable — skip
+        if (kanjiSet.size + newChars.length <= MAX) {
+          newChars.forEach(ch => kanjiSet.add(ch));
+        }
+      }
+
+      // 3. Fallback: fill remaining slots from kanji_pool
+      if (kanjiSet.size < MAX) {
+        for (const ch of state.kanjiPool) {
+          if (kanjiSet.size >= MAX) break;
+          if (!kanjiSet.has(ch)) kanjiSet.add(ch);
+        }
+      }
+
+      if (kanjiSet.size < MAX) console.warn('Grid: could not fill 25 kanji');
+
+      const gridKanji = shuffle([...kanjiSet]).slice(0, MAX);
+
+      // 4. Compute all fully-representable words
+      const formableWords = state.allWords.filter(w =>
+        w._stripped.length > 0 && [...w._stripped].every(ch => kanjiSet.has(ch))
+      );
+
+      return { gridKanji, formableWords };
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
