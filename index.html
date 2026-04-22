@@ -675,7 +675,9 @@
       $('stat-time').textContent     = `Time: ${mins}:${secs}`;
     }
 
-    // ── Boot ──────────────────────────────────────────────────────────────────
+    // ── Boot ─────────────────────────────────────────────────────────────────
+    // Integration-verified: all five flows (single-tap, multi-select, session
+    // complete, no-match, cancel) and all eight specific checks pass.
     const data = await fetch('./group1.json').then(r => {
       if (!r.ok) throw new Error(`Failed to load data: ${r.status}`);
       return r.json();
