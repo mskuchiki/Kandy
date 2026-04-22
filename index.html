@@ -389,6 +389,7 @@
       state.mode          = 'idle';
       state.selected      = [];
       state.currentWord   = null;
+      if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
       buildGridAndRender();
     }
 
@@ -428,7 +429,13 @@
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────
-    const data = await fetch('./group1.json').then(r => r.json());
+    const data = await fetch('./group1.json').then(r => {
+      if (!r.ok) throw new Error(`Failed to load data: ${r.status}`);
+      return r.json();
+    }).catch(err => {
+      document.body.innerHTML = `<p style="padding:24px;font-family:sans-serif;color:#c62828;">Could not load group1.json. Serve this file over HTTP (e.g. python3 -m http.server).<br><small>${err.message}</small></p>`;
+      throw err;
+    });
     data.words.forEach(w => { w._stripped = stripHiragana(w.kanji); });
     initSession(data.words, data.kanji_pool);
   </script>
