@@ -328,7 +328,109 @@
   </div>
 
   <script type="module">
-    // JS added in subsequent tasks
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const stripHiragana = s => s.replace(/[぀-ゟ]/g, '');
+    const shuffle = arr => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    const state = {
+      // session
+      allWords: [],
+      kanjiPool: [],
+      pendingTargets: [],
+      answeredCount: 0,
+      wrongCount: 0,
+      startTime: null,
+      // grid
+      gridKanji: [],
+      formableWords: [],
+      // interaction
+      mode: 'idle',   // 'idle' | 'selecting' | 'question' | 'feedback' | 'complete'
+      selected: [],
+      holdTimer: null,
+      // question
+      currentWord: null,
+      choices: [],
+      lastCorrect: null,
+    };
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const gridEl          = $('grid-container');
+    const progressText    = $('progress-text');
+    const progressFill    = $('progress-fill');
+    const selectionStrip  = $('selection-strip');
+    const selectedDisplay = $('selected-display');
+    const toastEl         = $('toast');
+    const modalOverlay    = $('modal-overlay');
+    const modalWord       = $('modal-word');
+    const choicesGrid     = $('choices-grid');
+    const feedbackOverlay = $('feedback-overlay');
+    const feedbackIcon    = $('feedback-icon');
+    const feedbackReading = $('feedback-reading');
+    const feedbackMeaning = $('feedback-meaning');
+    const completeScreen  = $('complete-screen');
+
+    // ── Session init ──────────────────────────────────────────────────────────
+    function initSession(allWords, kanjiPool) {
+      state.allWords      = allWords;
+      state.kanjiPool     = kanjiPool;
+      state.pendingTargets = allWords.filter(w => w.target);
+      state.answeredCount = 0;
+      state.wrongCount    = 0;
+      state.startTime     = Date.now();
+      state.mode          = 'idle';
+      state.selected      = [];
+      state.currentWord   = null;
+      buildGridAndRender();
+    }
+
+    function buildGridAndRender() {
+      buildGrid();
+      render();
+    }
+
+    // ── Grid build (stub — replaced in Task 3) ────────────────────────────────
+    function buildGrid() {
+      state.gridKanji    = state.kanjiPool.slice(0, 25);
+      state.formableWords = [];
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────────
+    function render() {
+      renderProgress();
+      renderGrid();
+    }
+
+    function renderProgress() {
+      const total   = state.allWords.filter(w => w.target).length;
+      const cleared = total - state.pendingTargets.length;
+      progressText.textContent  = `${cleared} / ${total}`;
+      progressFill.style.width  = `${(cleared / total) * 100}%`;
+    }
+
+    function renderGrid() {
+      gridEl.innerHTML = '';
+      state.gridKanji.forEach(kanji => {
+        const cell = document.createElement('div');
+        cell.className    = 'kanji-cell';
+        cell.textContent  = kanji;
+        cell.dataset.kanji = kanji;
+        gridEl.appendChild(cell);
+      });
+    }
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    const data = await fetch('./group1.json').then(r => r.json());
+    data.words.forEach(w => { w._stripped = stripHiragana(w.kanji); });
+    initSession(data.words, data.kanji_pool);
   </script>
 </body>
 </html>
