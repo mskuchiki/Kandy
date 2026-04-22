@@ -414,6 +414,15 @@
       const MAX = 25;
       const kanjiSet = new Set();
 
+      // Guard: if no pending targets (shouldn't happen in normal flow), fill from pool
+      if (state.pendingTargets.length === 0) {
+        for (const ch of state.kanjiPool) {
+          if (kanjiSet.size >= MAX) break;
+          kanjiSet.add(ch);
+        }
+        return { gridKanji: shuffle([...kanjiSet]).slice(0, MAX), formableWords: [] };
+      }
+
       // 1. Focus word: random pending target
       const focus = state.pendingTargets[Math.floor(Math.random() * state.pendingTargets.length)];
       for (const ch of focus._stripped) kanjiSet.add(ch);
