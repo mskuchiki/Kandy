@@ -583,8 +583,33 @@
     }
 
     function showQuestion(word) {
-      // Stub — replaced in Task 6
-      console.log('Matched:', word.kanji, '→', word.reading, '(' + word.meaning + ')');
+      state.currentWord = word;
+      state.mode        = 'question';
+
+      state.choices = shuffle([
+        word.reading,
+        ...word.distractors.map(d => d.reading),
+      ]);
+
+      modalWord.textContent = word.kanji;
+
+      choicesGrid.innerHTML = '';
+      state.choices.forEach(reading => {
+        const btn = document.createElement('button');
+        btn.className   = 'choice-btn';
+        btn.textContent = reading;
+        btn.addEventListener('click', () => handleAnswer(reading));
+        choicesGrid.appendChild(btn);
+      });
+
+      modalOverlay.classList.add('visible');
+    }
+
+    function handleAnswer(reading) {
+      // Stub — replaced in Task 7
+      modalOverlay.classList.remove('visible');
+      console.log('Answered:', reading, '| Correct was:', state.currentWord.reading);
+      state.mode = 'idle';
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────
