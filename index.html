@@ -390,6 +390,8 @@
       updateSelectionStrip();
     });
 
+    $('btn-got-it').addEventListener('click', dismissFeedback);
+
     // ── Session init ──────────────────────────────────────────────────────────
     function initSession(allWords, kanjiPool) {
       state.allWords      = allWords;
@@ -475,6 +477,10 @@
     function render() {
       renderProgress();
       renderGrid();
+      // Reset overlay visibility when re-entering idle
+      modalOverlay.classList.remove('visible');
+      feedbackOverlay.classList.remove('visible', 'correct', 'wrong');
+      selectionStrip.classList.remove('visible');
     }
 
     function renderProgress() {
@@ -606,10 +612,50 @@
     }
 
     function handleAnswer(reading) {
-      // Stub — replaced in Task 7
       modalOverlay.classList.remove('visible');
-      console.log('Answered:', reading, '| Correct was:', state.currentWord.reading);
-      state.mode = 'idle';
+
+      const isCorrect = reading === state.currentWord.reading;
+      state.answeredCount++;
+      if (!isCorrect) state.wrongCount++;
+      state.lastCorrect = isCorrect;
+
+      if (isCorrect && state.currentWord.target) {
+        state.pendingTargets = state.pendingTargets.filter(w => w !== state.currentWord);
+      }
+
+      showFeedback(isCorrect);
+    }
+
+    function showFeedback(isCorrect) {
+      state.mode = 'feedback';
+
+      feedbackOverlay.classList.remove('correct', 'wrong');
+      feedbackOverlay.classList.add(isCorrect ? 'correct' : 'wrong', 'visible');
+
+      feedbackIcon.textContent    = isCorrect ? '✓' : '✗';
+      feedbackReading.textContent = state.currentWord.reading;
+      feedbackMeaning.textContent = state.currentWord.meaning;
+
+      if (isCorrect) {
+        setTimeout(dismissFeedback, 1000);
+      }
+      // Wrong: waits for "Got it" button — handled by event listener
+    }
+
+    function dismissFeedback() {
+      feedbackOverlay.classList.remove('visible', 'correct', 'wrong');
+
+      if (state.pendingTargets.length === 0) {
+        showComplete();
+        return;
+      }
+
+      buildGridAndRender();
+    }
+
+    function showComplete() {
+      // Stub — replaced in Task 8
+      console.log('Session complete!');
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────
