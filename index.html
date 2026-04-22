@@ -548,11 +548,43 @@
     }
 
     function submitSelection(selectedKanji) {
-      // Stub — replaced in Task 5
       state.mode     = 'idle';
       state.selected = [];
       updateSelectionStrip();
-      console.log('Submitted:', selectedKanji.join(''));
+
+      const query = selectedKanji.join('');
+      const word  = matchWord(query);
+
+      if (!word) {
+        showToast('No word for that selection');
+        return;
+      }
+
+      showQuestion(word);
+    }
+
+    function matchWord(query) {
+      const matches = state.allWords.filter(w => w._stripped === query);
+      if (matches.length === 0) return null;
+      if (matches.length === 1) return matches[0];
+
+      // Multiple matches: prefer uncleared targets
+      const pending = matches.filter(w => state.pendingTargets.includes(w));
+      if (pending.length > 0) return pending[Math.floor(Math.random() * pending.length)];
+      return matches[Math.floor(Math.random() * matches.length)];
+    }
+
+    let _toastTimer = null;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1500);
+    }
+
+    function showQuestion(word) {
+      // Stub — replaced in Task 6
+      console.log('Matched:', word.kanji, '→', word.reading, '(' + word.meaning + ')');
     }
 
     // ── Boot ──────────────────────────────────────────────────────────────────
