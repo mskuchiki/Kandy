@@ -322,6 +322,7 @@
   <div id="complete-screen">
     <h1>Session Complete!</h1>
     <div class="stat-row" id="stat-cleared"></div>
+    <div class="stat-row" id="stat-attempts"></div>
     <div class="stat-row" id="stat-accuracy"></div>
     <div class="stat-row" id="stat-time"></div>
     <button id="btn-restart">Start Over</button>
@@ -648,6 +649,7 @@
     }
 
     function dismissFeedback() {
+      if (!feedbackOverlay.classList.contains('visible')) return;
       feedbackOverlay.classList.remove('visible', 'correct', 'wrong');
 
       if (state.pendingTargets.length === 0) {
@@ -670,7 +672,9 @@
         ? Math.round(((state.answeredCount - state.wrongCount) / state.answeredCount) * 100)
         : 100;
 
-      $('stat-cleared').textContent  = `Words cleared: ${total} / ${total}`;
+      const cleared = total - state.pendingTargets.length;
+      $('stat-cleared').textContent  = `Words cleared: ${cleared} / ${total}`;
+      $('stat-attempts').textContent = `Total attempts: ${state.answeredCount}`;
       $('stat-accuracy').textContent = `Accuracy: ${accuracy}%`;
       $('stat-time').textContent     = `Time: ${mins}:${secs}`;
     }
