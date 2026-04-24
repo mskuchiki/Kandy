@@ -539,8 +539,6 @@
       currentWord: null,
       tiles: [],
       kanaSelected: [],
-      lastCorrect: null,
-      isHint: false,
       mastery: new Map(),
       masteryExemptKeywords: new Set(),
       revealedWords: new Set(),
@@ -644,7 +642,6 @@
       state.mode           = 'idle';
       state.selected       = [];
       state.currentWord    = null;
-      state.isHint         = false;
       state.mastery        = new Map();
       state.masteryExemptKeywords = computeMasteryExemptKeywords(state.allWords, targetSet);
       state.revealedWords  = new Set();
@@ -975,7 +972,6 @@
     function handleAnswer(isCorrect) {
       state.answeredCount++;
       if (!isCorrect) state.wrongCount++;
-      state.lastCorrect = isCorrect;
 
       const w = state.currentWord;
       const isTarget = state.targets.has(w);
@@ -1023,7 +1019,6 @@
       state.blockedTargets.set(word, 3);
       state.currentWord = word;
       state.mode        = 'feedback';
-      state.isHint      = true;
 
       feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
       feedbackOverlay.classList.add('correct', 'hint', 'visible');
@@ -1042,8 +1037,7 @@
         return;
       }
 
-      state.mode   = 'idle';
-      state.isHint = false;
+      state.mode = 'idle';
       buildGridAndRender();
     }
 
