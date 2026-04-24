@@ -1,6 +1,6 @@
 # Kanji Grid Study — Prototype
 
-Tap kanji on a 5×5 grid to identify words. Complete all 25 target words to finish the session.
+Tap kanji on a 5×5 grid to identify words. Each session picks 25 random target words from a 1309-word vocab list. Complete all 25 targets to finish the session.
 
 ## Running
 
@@ -34,10 +34,11 @@ npx serve .
 | File | Description |
 |------|-------------|
 | `index.html` | Full app — HTML + CSS + JS, no build step |
-| `group1.json` | Study data (Group 1, 25 target words) |
+| `kandy_core_vocab.json` | Vocab dataset (1309 words), generated from the xlsx |
+| `kandy_core_vocab.xlsx` | Source spreadsheet for the dataset |
+| `scripts/build_vocab_json.py` | Regenerates the JSON from the xlsx |
 
 ## Known limitations
 
 - Must be served over HTTP (not `file://`)
 - No cross-session persistence — refresh resets progress
-- Only Group 1 is included
