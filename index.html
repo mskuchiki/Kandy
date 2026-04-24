@@ -316,6 +316,19 @@
     }
     #btn-backspace:hover { color: #333; }
 
+    #btn-modal-reveal {
+      margin-top: 14px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-family: var(--font-jp);
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+    #btn-modal-reveal:hover { background: #eee; color: #333; }
+
     /* ── Feedback overlay ─────────────────── */
     #feedback-overlay {
       display: none;
@@ -341,7 +354,8 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.12);
     }
 
-    #feedback-icon   { font-size: 48px; margin-bottom: 12px; }
+    #feedback-icon   { font-size: 48px; margin-bottom: 8px; min-height: 48px; }
+    #feedback-word    { font-size: 36px; font-weight: 500; margin-bottom: 8px; font-family: var(--font-jp); }
     #feedback-reading { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
     #feedback-meaning { font-size: 16px; color: #555; margin-bottom: 20px; }
 
@@ -425,12 +439,14 @@
         <span id="kana-answer-text"></span>
         <button id="btn-backspace">⌫</button>
       </div>
+      <button id="btn-modal-reveal">Reveal answer</button>
     </div>
   </div>
 
   <div id="feedback-overlay">
     <div id="feedback-box">
       <div id="feedback-icon"></div>
+      <div id="feedback-word"></div>
       <div id="feedback-reading"></div>
       <div id="feedback-meaning"></div>
       <button id="btn-got-it">Got it</button>
@@ -543,7 +559,8 @@
       masteryExemptKeywords: new Set(),
       revealedWords: new Set(),
       extraFound: new Set(),
-      blockedTargets: new Map(),  // target word -> remaining reshuffles
+      blockedTargets: new Map(),  // target word -> remaining reshuffles (wrong answer only)
+      hintPending: new Set(),     // target words whose next correct tap is a "free pass"
     };
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -556,6 +573,7 @@
     const modalWord       = $('modal-word');
     const feedbackOverlay = $('feedback-overlay');
     const feedbackIcon    = $('feedback-icon');
+    const feedbackWord    = $('feedback-word');
     const feedbackReading = $('feedback-reading');
     const feedbackMeaning = $('feedback-meaning');
     const completeScreen  = $('complete-screen');
@@ -579,6 +597,12 @@
       const tileEl = $('kana-tiles').querySelector(`[data-tile-idx="${lastIdx}"]`);
       if (tileEl) tileEl.classList.remove('used');
       updateKanaAnswer();
+    });
+
+    $('btn-modal-reveal').addEventListener('click', () => {
+      if (state.mode !== 'question') return;
+      modalOverlay.classList.remove('visible');
+      handleAnswer(false);
     });
 
     $('btn-got-it').addEventListener('click', dismissFeedback);
@@ -647,6 +671,7 @@
       state.revealedWords  = new Set();
       state.extraFound     = new Set();
       state.blockedTargets = new Map();
+      state.hintPending    = new Set();
       if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
       buildGridAndRender();
     }
@@ -696,9 +721,12 @@
       }
 
       // 2. Greedy pack: pending targets first, then bonuses, then cleared targets.
+      //    Blocked targets are excluded — their kanji shouldn't be forced into
+      //    the grid for 3 rebuilds after a wrong answer.
       const clearedTargets = [...state.targets].filter(w => !state.pendingTargets.includes(w));
+      const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
       const packOrder = [
-        ...shuffle(state.pendingTargets.filter(w => w !== focus)),
+        ...shuffle(state.pendingTargets.filter(w => w !== focus && !isBlocked(w))),
         ...shuffle([...state.bonuses]),
         ...shuffle(clearedTargets),
       ];
@@ -731,9 +759,11 @@
 
       const shuffled = shuffle(gridKanji).slice(0, GRID_SIZE);
 
-      // 4. Compute formable words (multiset subset check against the grid)
+      // 4. Compute formable words (multiset subset check against the grid).
+      //    Blocked targets are filtered out — they're unreachable for their
+      //    remaining cooldown so they shouldn't highlight as "formable".
       const formableWords = state.allWords.filter(
-        w => w.kanji.length > 0 && isSubMultiset(w.kanji, shuffled)
+        w => w.kanji.length > 0 && !isBlocked(w) && isSubMultiset(w.kanji, shuffled)
       );
 
       return { gridKanji: shuffled, formableWords };
@@ -910,7 +940,11 @@
     }
 
     function matchWord(query) {
-      const matches = state.allWords.filter(w => w.kanji.join('') === query);
+      // Blocked targets are unmatchable for their remaining cooldown.
+      const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
+      const matches = state.allWords.filter(
+        w => w.kanji.join('') === query && !isBlocked(w)
+      );
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
 
@@ -980,15 +1014,22 @@
       if (isTarget) {
         if (isCorrect) {
           state.revealedWords.add(w);
-          const m = state.mastery.get(w) ?? 0;
-          if (m === 0 || m >= 2) {
-            state.pendingTargets = state.pendingTargets.filter(x => x !== w);
+          // Free pass: first correct tap after a hint doesn't advance
+          // mastery — the 3-count only starts on the next correct.
+          if (state.hintPending.has(w)) {
+            state.hintPending.delete(w);
           } else {
-            state.mastery.set(w, m === -1 ? 1 : m + 1);
+            const m = state.mastery.get(w) ?? 0;
+            if (m === 0 || m >= 2) {
+              state.pendingTargets = state.pendingTargets.filter(x => x !== w);
+            } else {
+              state.mastery.set(w, m === -1 ? 1 : m + 1);
+            }
           }
         } else {
           if (!state.masteryExemptKeywords.has(w.keyword)) state.mastery.set(w, -1);
           state.blockedTargets.set(w, 3);
+          state.hintPending.delete(w);
         }
       } else if (isCorrect) {
         state.extraFound.add(w);
@@ -1004,6 +1045,7 @@
       feedbackOverlay.classList.add(isCorrect ? 'correct' : 'wrong', 'visible');
 
       feedbackIcon.textContent    = isCorrect ? '✓' : '✗';
+      feedbackWord.textContent    = state.currentWord.word;
       feedbackReading.textContent = state.currentWord.hiragana.join('');
       feedbackMeaning.textContent = state.currentWord.keyword;
 
@@ -1015,22 +1057,28 @@
 
     function showHint(word) {
       if (state.mode !== 'idle') return;
+      // Mastery drops to -1 (3 corrects to clear), but hintPending grants
+      // a free pass on the first correct tap — so net cost after hint is
+      // 1 free + 3 counting = 4 correct taps. No block, no rebuild —
+      // the user practices forming the word on the current grid.
       if (!state.masteryExemptKeywords.has(word.keyword)) state.mastery.set(word, -1);
       state.revealedWords.add(word);
-      state.blockedTargets.set(word, 3);
+      state.hintPending.add(word);
       state.currentWord = word;
       state.mode        = 'feedback';
 
       feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
       feedbackOverlay.classList.add('correct', 'hint', 'visible');
 
-      feedbackIcon.textContent    = word.word;
+      feedbackIcon.textContent    = '';
+      feedbackWord.textContent    = word.word;
       feedbackReading.textContent = word.hiragana.join('');
       feedbackMeaning.textContent = word.keyword;
     }
 
     function dismissFeedback() {
       if (!feedbackOverlay.classList.contains('visible')) return;
+      const wasHint = feedbackOverlay.classList.contains('hint');
       feedbackOverlay.classList.remove('visible', 'correct', 'wrong', 'hint');
 
       if (state.pendingTargets.length === 0) {
@@ -1039,7 +1087,11 @@
       }
 
       state.mode = 'idle';
-      buildGridAndRender();
+      // Hints don't rebuild — user practices forming the word on the
+      // current grid. Just refresh the word list (mastery colour may
+      // have changed).
+      if (wasHint) renderWordList();
+      else         buildGridAndRender();
     }
 
     function showComplete() {
