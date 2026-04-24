@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2196f3">
+  <meta name="description" content="Tap kanji on a 5×5 grid to identify Japanese words.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Kandy">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <title>Kanji Grid Study</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1127,6 +1134,13 @@
     state.dataset = data.words;
     state.datasetByKeyword = new Map(data.words.map(w => [w.keyword, w]));
     initSession();
+
+    // PWA: register the service worker for offline + installability.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('SW registration failed', err);
+      });
+    }
   </script>
 </body>
 </html>

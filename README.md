@@ -29,14 +29,29 @@ npx serve .
 - Correct answers clear the word from the session. Wrong answers keep it in the queue.
 - The session ends when all 25 target words are answered correctly.
 
+## Install as a PWA
+
+The app ships a web manifest and a service worker, so it's installable
+and works offline after the first load.
+
+- **Desktop Chrome / Edge:** click the install icon in the address bar.
+- **Android Chrome:** menu → *Install app*.
+- **iOS Safari:** Share → *Add to Home Screen*.
+
+Regenerate the placeholder icons with `py scripts/build_icons.py`.
+
 ## Files
 
 | File | Description |
 |------|-------------|
 | `index.html` | Full app — HTML + CSS + JS, no build step |
+| `manifest.webmanifest` | PWA manifest (name, icons, theme colour) |
+| `sw.js` | Service worker — caches the app shell for offline use |
+| `icons/` | PWA icons (192, 512, maskable 512) |
 | `kandy_core_vocab.json` | Vocab dataset (1309 words), generated from the xlsx |
 | `kandy_core_vocab.xlsx` | Source spreadsheet for the dataset |
 | `scripts/build_vocab_json.py` | Regenerates the JSON from the xlsx |
+| `scripts/build_icons.py` | Regenerates the PWA icons |
 
 ## Known limitations
 
