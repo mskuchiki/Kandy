@@ -37,35 +37,107 @@
 
     #app {
       width: 100%;
-      max-width: 420px;
+      max-width: 500px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    /* ── Progress bar ─────────────────────── */
-    #progress-bar {
+    /* ── Main layout ──────────────────────── */
+    #main-area {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #grid-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ── Word list ────────────────────────── */
+    #word-list {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .word-item {
+      border: 1.5px solid #eee;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #f8f8f8;
+      color: #ccc;
+    }
+
+    .word-item.pending {
+      cursor: pointer;
+      color: #888;
+      border-color: #ddd;
+    }
+
+    .word-item.pending.formable {
+      color: #1a1a1a;
+      font-weight: 600;
+      border-color: #bbb;
+      text-decoration: underline;
+    }
+
+    .word-item.pending.mastery-red {
+      background: #ffebee;
+      border-color: #e57373;
+      color: #c62828;
+    }
+
+    .word-item.pending.mastery-orange {
+      background: #fff3e0;
+      border-color: #ffb74d;
+      color: #e65100;
+    }
+
+    .word-item.pending:hover {
+      border-color: #4a90d9;
+      color: #4a90d9;
+    }
+
+    .word-item.cleared {
+      text-decoration: line-through;
+      color: #ccc;
+      border-color: #eee;
+      background: #fff;
+    }
+
+    /* ── Extra counter ────────────────────── */
+    #extra-counter {
       font-size: 13px;
       color: #555;
+      text-align: center;
     }
 
-    #progress-track {
-      flex: 1;
-      height: 6px;
-      background: #eee;
-      border-radius: 3px;
-      overflow: hidden;
+    /* ── Reveal button ────────────────────── */
+    #btn-reveal {
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: var(--font-jp);
+      font-size: 12px;
+      color: #555;
+      cursor: pointer;
     }
+    #btn-reveal:hover { background: #eee; }
 
-    #progress-fill {
-      height: 100%;
-      background: var(--color-progress);
-      border-radius: 3px;
-      transition: width 0.3s ease;
-      width: 0%;
+    /* ── Word text blur ───────────────────── */
+    .word-text { transition: filter 0.3s; }
+    .word-item.hidden .word-text {
+      filter: blur(5px);
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     /* ── Kanji grid ───────────────────────── */
@@ -90,6 +162,8 @@
     }
 
     .kanji-cell:active { transform: scale(0.93); }
+
+    .kanji-cell.word-present { background: #dbeeff; border-color: #a8ccf0; }
 
     .kanji-cell.selected {
       background: var(--color-cell-selected-bg);
@@ -189,24 +263,58 @@
       min-height: 72px;
     }
 
-    #choices-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+    #kana-tiles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
     }
 
-    .choice-btn {
+    .kana-tile {
       background: #f5f5f5;
       border: 1.5px solid #ccc;
       border-radius: 8px;
-      padding: 14px 8px;
+      padding: 10px 14px;
       font-family: var(--font-jp);
-      font-size: 16px;
+      font-size: 20px;
       cursor: pointer;
-      transition: background 0.1s;
+      min-width: 44px;
+      text-align: center;
+      transition: background 0.1s, opacity 0.15s;
     }
 
-    .choice-btn:hover { background: #eaeaea; }
+    .kana-tile:hover:not(.used) { background: #eaeaea; }
+    .kana-tile.used { opacity: 0.28; pointer-events: none; }
+
+    #kana-answer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 48px;
+      background: #f0f4ff;
+      border: 1px solid #c0d0f0;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    #kana-answer-text {
+      flex: 1;
+      font-family: var(--font-jp);
+      font-size: 22px;
+      letter-spacing: 2px;
+    }
+
+    #btn-backspace {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #999;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    #btn-backspace:hover { color: #333; }
 
     /* ── Feedback overlay ─────────────────── */
     #feedback-overlay {
@@ -253,6 +361,7 @@
     }
 
     #feedback-overlay.wrong #btn-got-it { display: inline-block; }
+    #feedback-overlay.hint  #btn-got-it { display: inline-block; background: var(--color-correct); }
 
     /* ── Session complete ─────────────────── */
     #complete-screen {
@@ -288,16 +397,21 @@
 </head>
 <body>
   <div id="app">
-    <div id="progress-bar">
-      <span id="progress-text">0 / 25</span>
-      <div id="progress-track"><div id="progress-fill"></div></div>
-    </div>
-    <div id="grid-container"></div>
-    <div id="selection-strip">
-      <span class="strip-label">Selected:</span>
-      <span id="selected-display"></span>
-      <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
-      <button id="btn-cancel"  class="strip-btn">✕ Cancel</button>
+    <div id="main-area">
+      <div id="grid-section">
+        <div id="extra-counter">
+          Extra words: <span id="extra-found">0</span> / <span id="extra-total">0</span>
+        </div>
+        <div id="grid-container"></div>
+        <div id="selection-strip">
+          <span class="strip-label">Selected:</span>
+          <span id="selected-display"></span>
+          <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
+          <button id="btn-cancel"  class="strip-btn">✕ Cancel</button>
+        </div>
+      </div>
+      <button id="btn-reveal">Reveal a word</button>
+      <div id="word-list"></div>
     </div>
   </div>
 
@@ -306,7 +420,11 @@
   <div id="modal-overlay">
     <div id="modal-box">
       <div id="modal-word"></div>
-      <div id="choices-grid"></div>
+      <div id="kana-tiles"></div>
+      <div id="kana-answer">
+        <span id="kana-answer-text"></span>
+        <button id="btn-backspace">⌫</button>
+      </div>
     </div>
   </div>
 
@@ -330,7 +448,6 @@
 
   <script type="module">
     // ── Helpers ───────────────────────────────────────────────────────────────
-    const stripHiragana = s => s.replace(/[぀-ゟ]/g, '');
     const shuffle = arr => {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {
@@ -340,11 +457,73 @@
       return a;
     };
 
+    const sample = (arr, n) => shuffle(arr).slice(0, Math.min(n, arr.length));
+
+    // Multiset subset check: every element of `needles` (with multiplicity)
+    // must be present in `haystack`. Both are arrays of strings.
+    function isSubMultiset(needles, haystack) {
+      const counts = new Map();
+      for (const ch of haystack) counts.set(ch, (counts.get(ch) ?? 0) + 1);
+      for (const ch of needles) {
+        const c = counts.get(ch) ?? 0;
+        if (c === 0) return false;
+        counts.set(ch, c - 1);
+      }
+      return true;
+    }
+
+    const HIRAGANA_POOL = [
+      "あ","い","う","え","お",
+      "か","き","く","け","こ",
+      "さ","し","す","せ","そ",
+      "た","ち","つ","て","と",
+      "な","に","ぬ","ね","の",
+      "は","ひ","ふ","へ","ほ",
+      "ま","み","む","め","も",
+      "や","ゆ","よ",
+      "ら","り","る","れ","ろ",
+      "わ","を","ん",
+      "が","ぎ","ぐ","げ","ご",
+      "ざ","じ","ず","ぜ","ぞ",
+      "だ","ぢ","づ","で","ど",
+      "ば","び","ぶ","べ","ぼ",
+      "ぱ","ぴ","ぷ","ぺ","ぽ",
+      "っ",
+      "きゃ","きゅ","きょ",
+      "しゃ","しゅ","しょ",
+      "ちゃ","ちゅ","ちょ",
+      "にゃ","にゅ","にょ",
+      "ひゃ","ひゅ","ひょ",
+      "みゃ","みゅ","みょ",
+      "りゃ","りゅ","りょ",
+      "ぎゃ","ぎゅ","ぎょ",
+      "じゃ","じゅ","じょ",
+      "びゃ","びゅ","びょ",
+      "ぴゃ","ぴゅ","ぴょ",
+    ];
+
+    function generateTiles(word) {
+      const answer = word.hiragana;
+      const answerLen = answer.length;
+      const minExtras = Math.min(10, Math.max(3, 6 - answerLen));
+      const maxExtras = Math.max(0, Math.min(10, 12 - answerLen));
+      const clampedMin = Math.min(minExtras, maxExtras);
+      const numExtras = clampedMin + Math.floor(Math.random() * (maxExtras - clampedMin + 1));
+      const answerSet = new Set(answer);
+      const extras = shuffle(HIRAGANA_POOL.filter(k => !answerSet.has(k))).slice(0, numExtras);
+      return shuffle([...answer, ...extras]);
+    }
+
     // ── State ─────────────────────────────────────────────────────────────────
     const state = {
+      // dataset (loaded once, kept immutable)
+      dataset: [],          // full JSON words array (1309)
+      datasetByKeyword: new Map(),
       // session
-      allWords: [],
-      kanjiPool: [],
+      targets: new Set(),   // target word objects (25)
+      bonuses: new Set(),   // bonus word objects (>=25)
+      allWords: [],         // [...targets, ...bonuses]
+      sessionKanjiPool: [], // unique kanji across all session words
       pendingTargets: [],
       answeredCount: 0,
       wrongCount: 0,
@@ -353,31 +532,36 @@
       gridKanji: [],
       formableWords: [],
       // interaction
-      mode: 'idle',   // 'idle' | 'selecting' | 'question' | 'feedback' | 'complete'
+      mode: 'idle',
       selected: [],
       holdTimer: null,
       // question
       currentWord: null,
-      choices: [],
+      tiles: [],
+      kanaSelected: [],
       lastCorrect: null,
+      isHint: false,
+      mastery: new Map(),
+      masteryExemptKeywords: new Set(),
+      revealedWords: new Set(),
+      extraFound: new Set(),
+      blockedTargets: new Map(),  // target word -> remaining reshuffles
     };
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
     const $ = id => document.getElementById(id);
     const gridEl          = $('grid-container');
-    const progressText    = $('progress-text');
-    const progressFill    = $('progress-fill');
     const selectionStrip  = $('selection-strip');
     const selectedDisplay = $('selected-display');
     const toastEl         = $('toast');
     const modalOverlay    = $('modal-overlay');
     const modalWord       = $('modal-word');
-    const choicesGrid     = $('choices-grid');
     const feedbackOverlay = $('feedback-overlay');
     const feedbackIcon    = $('feedback-icon');
     const feedbackReading = $('feedback-reading');
     const feedbackMeaning = $('feedback-meaning');
     const completeScreen  = $('complete-screen');
+    const wordListEl      = $('word-list');
 
     // ── Button handlers ───────────────────────────────────────────────────────
     $('btn-confirm').addEventListener('click', () => {
@@ -391,24 +575,81 @@
       updateSelectionStrip();
     });
 
+    $('btn-backspace').addEventListener('click', () => {
+      if (state.mode !== 'question' || state.kanaSelected.length === 0) return;
+      const lastIdx = state.kanaSelected.pop();
+      const tileEl = $('kana-tiles').querySelector(`[data-tile-idx="${lastIdx}"]`);
+      if (tileEl) tileEl.classList.remove('used');
+      updateKanaAnswer();
+    });
+
     $('btn-got-it').addEventListener('click', dismissFeedback);
+
+    $('btn-reveal').addEventListener('click', () => {
+      const candidates = state.formableWords.filter(w =>
+        state.targets.has(w) && state.pendingTargets.includes(w) && !state.revealedWords.has(w)
+      );
+      if (candidates.length === 0) {
+        showToast('All visible words already revealed');
+        return;
+      }
+      const word = candidates[Math.floor(Math.random() * candidates.length)];
+      state.revealedWords.add(word);
+      renderWordList();
+    });
 
     $('btn-restart').addEventListener('click', () => {
       completeScreen.classList.remove('visible');
-      initSession(state.allWords, state.kanjiPool);
+      initSession();
     });
 
     // ── Session init ──────────────────────────────────────────────────────────
-    function initSession(allWords, kanjiPool) {
-      state.allWords      = allWords;
-      state.kanjiPool     = kanjiPool;
-      state.pendingTargets = allWords.filter(w => w.target);
-      state.answeredCount = 0;
-      state.wrongCount    = 0;
-      state.startTime     = Date.now();
-      state.mode          = 'idle';
-      state.selected      = [];
-      state.currentWord   = null;
+    function initSession() {
+      const dataset = state.dataset;
+      // 1. Pick 25 random targets (without replacement)
+      const targetList = sample(dataset, 25);
+      const targetSet = new Set(targetList);
+
+      // 2. Union of distractors, excluding any target
+      const bonusSet = new Set();
+      for (const t of targetList) {
+        for (const kw of t.distractors) {
+          const w = state.datasetByKeyword.get(kw);
+          if (w && !targetSet.has(w)) bonusSet.add(w);
+        }
+      }
+
+      // 3. Pad to >= 25 bonuses with random non-target, non-bonus words
+      if (bonusSet.size < 25) {
+        const pool = dataset.filter(w => !targetSet.has(w) && !bonusSet.has(w));
+        const needed = 25 - bonusSet.size;
+        for (const w of sample(pool, needed)) bonusSet.add(w);
+      }
+
+      state.targets       = targetSet;
+      state.bonuses       = bonusSet;
+      state.allWords      = [...targetSet, ...bonusSet];
+
+      // 4. Session kanji pool: unique kanji union across all session words
+      const poolSet = new Set();
+      for (const w of state.allWords) {
+        for (const ch of w.kanji) poolSet.add(ch);
+      }
+      state.sessionKanjiPool = [...poolSet];
+
+      state.pendingTargets = [...targetList];
+      state.answeredCount  = 0;
+      state.wrongCount     = 0;
+      state.startTime      = Date.now();
+      state.mode           = 'idle';
+      state.selected       = [];
+      state.currentWord    = null;
+      state.isHint         = false;
+      state.mastery        = new Map();
+      state.masteryExemptKeywords = computeMasteryExemptKeywords(state.allWords, targetSet);
+      state.revealedWords  = new Set();
+      state.extraFound     = new Set();
+      state.blockedTargets = new Map();
       if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
       buildGridAndRender();
     }
@@ -419,6 +660,8 @@
     }
 
     // ── Grid build ────────────────────────────────────────────────────────────
+    const GRID_SIZE = 25;
+
     function buildGrid() {
       let best = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -426,74 +669,150 @@
         if (!best || result.formableWords.length > best.formableWords.length) best = result;
         if (best.formableWords.length >= 5) break;
       }
-      state.gridKanji    = best.gridKanji;
+      state.gridKanji     = best.gridKanji;
       state.formableWords = best.formableWords;
+
+      // Decrement cooldowns at the end of every rebuild.
+      for (const [w, n] of state.blockedTargets) {
+        if (n <= 1) state.blockedTargets.delete(w);
+        else state.blockedTargets.set(w, n - 1);
+      }
     }
 
     function tryBuildGrid() {
-      const MAX = 25;
-      const kanjiSet = new Set();
+      const gridKanji = [];  // array (allows duplicates)
+      const addKanji  = ch => { gridKanji.push(ch); };
 
-      // Guard: if no pending targets (shouldn't happen in normal flow), fill from pool
-      if (state.pendingTargets.length === 0) {
-        for (const ch of state.kanjiPool) {
-          if (kanjiSet.size >= MAX) break;
-          kanjiSet.add(ch);
-        }
-        return { gridKanji: shuffle([...kanjiSet]).slice(0, MAX), formableWords: [] };
-      }
+      // 1. Focus word: prefer unblocked pending target; fall back to any
+      //    pending target if all blocked (or only blocked target remaining).
+      let focusCandidates = state.pendingTargets.filter(
+        w => (state.blockedTargets.get(w) ?? 0) === 0
+      );
+      if (focusCandidates.length === 0) focusCandidates = state.pendingTargets;
 
-      // 1. Focus word: random pending target
-      const focus = state.pendingTargets[Math.floor(Math.random() * state.pendingTargets.length)];
-      for (const ch of focus._stripped) kanjiSet.add(ch);
-
-      // 2. Add complete words greedily until 25 unique kanji
-      const pool = shuffle(state.allWords);
-      for (const word of pool) {
-        if (kanjiSet.size >= MAX) break;
-        if (word._stripped.length === 0) continue;
-        const newChars = [...word._stripped].filter(ch => !kanjiSet.has(ch));
-        if (newChars.length === 0) continue;               // already fully representable — skip
-        if (kanjiSet.size + newChars.length <= MAX) {
-          newChars.forEach(ch => kanjiSet.add(ch));
+      let focus = null;
+      if (focusCandidates.length > 0) {
+        focus = focusCandidates[Math.floor(Math.random() * focusCandidates.length)];
+        if (focus.kanji.length <= GRID_SIZE) {
+          for (const ch of focus.kanji) addKanji(ch);
         }
       }
 
-      // 3. Fallback: fill remaining slots from kanji_pool
-      if (kanjiSet.size < MAX) {
-        for (const ch of state.kanjiPool) {
-          if (kanjiSet.size >= MAX) break;
-          if (!kanjiSet.has(ch)) kanjiSet.add(ch);
+      // 2. Greedy pack: pending targets first, then bonuses, then cleared targets.
+      const clearedTargets = [...state.targets].filter(w => !state.pendingTargets.includes(w));
+      const packOrder = [
+        ...shuffle(state.pendingTargets.filter(w => w !== focus)),
+        ...shuffle([...state.bonuses]),
+        ...shuffle(clearedTargets),
+      ];
+
+      for (const w of packOrder) {
+        if (gridKanji.length >= GRID_SIZE) break;
+        if (w.kanji.length === 0) continue;
+        // Extra kanji this word would need beyond what's already on the grid,
+        // respecting the word's own internal multiplicity.
+        const needed = countsNeededBeyond(w.kanji, gridKanji);
+        if (needed.length === 0) continue;        // already fully formable
+        if (gridKanji.length + needed.length <= GRID_SIZE) {
+          for (const ch of needed) addKanji(ch);
         }
       }
 
-      if (kanjiSet.size < MAX) console.warn('Grid: could not fill 25 kanji');
+      // 3. Fill remaining slots with random kanji from the session pool
+      //    that aren't already at the slot count they'd need. Simpler: just
+      //    pull random pool kanji that don't already appear on the grid.
+      if (gridKanji.length < GRID_SIZE) {
+        const onGrid = new Set(gridKanji);
+        const fill = shuffle(state.sessionKanjiPool.filter(ch => !onGrid.has(ch)));
+        for (const ch of fill) {
+          if (gridKanji.length >= GRID_SIZE) break;
+          addKanji(ch);
+        }
+      }
 
-      const gridKanji = shuffle([...kanjiSet]).slice(0, MAX);
+      if (gridKanji.length < GRID_SIZE) console.warn('Grid: could not fill 25 kanji');
 
-      // 4. Compute all fully-representable words
-      const formableWords = state.allWords.filter(w =>
-        w._stripped.length > 0 && [...w._stripped].every(ch => kanjiSet.has(ch))
+      const shuffled = shuffle(gridKanji).slice(0, GRID_SIZE);
+
+      // 4. Compute formable words (multiset subset check against the grid)
+      const formableWords = state.allWords.filter(
+        w => w.kanji.length > 0 && isSubMultiset(w.kanji, shuffled)
       );
 
-      return { gridKanji, formableWords };
+      return { gridKanji: shuffled, formableWords };
+    }
+
+    // Returns the extra characters `needles` would add to `haystack` to
+    // be a sub-multiset. Empty array if already a sub-multiset.
+    function countsNeededBeyond(needles, haystack) {
+      const available = new Map();
+      for (const ch of haystack) available.set(ch, (available.get(ch) ?? 0) + 1);
+      const needed = [];
+      for (const ch of needles) {
+        const c = available.get(ch) ?? 0;
+        if (c > 0) available.set(ch, c - 1);
+        else needed.push(ch);
+      }
+      return needed;
+    }
+
+    const CORRECT_DISMISS_MS = 2000;
+
+    // A multi-kanji target is mastery-exempt when any single kanji in it is
+    // also the complete kanji form of a non-target session word. A single-tap
+    // on that kanji would match the non-target, making a clean streak
+    // impossible for the target via tap alone.
+    function computeMasteryExemptKeywords(allWords, targetSet) {
+      const nonTargetSingleKanji = new Set(
+        allWords
+          .filter(w => !targetSet.has(w) && w.kanji.length === 1)
+          .map(w => w.kanji[0])
+      );
+      const exempt = new Set();
+      for (const w of allWords) {
+        if (!targetSet.has(w) || w.kanji.length <= 1) continue;
+        if (w.kanji.some(ch => nonTargetSingleKanji.has(ch))) exempt.add(w.keyword);
+      }
+      return exempt;
     }
 
     // ── Render ────────────────────────────────────────────────────────────────
+    function renderWordList() {
+      wordListEl.innerHTML = '';
+      for (const w of state.targets) {
+        const div = document.createElement('div');
+        const pending  = state.pendingTargets.includes(w);
+        const formable = pending && state.formableWords.some(fw => fw === w);
+        const m        = pending ? (state.mastery.get(w) ?? 0) : null;
+        const revealed = !pending || state.revealedWords.has(w);
+        let cls = 'word-item ' + (pending ? 'pending' : 'cleared');
+        if (formable) cls += ' formable';
+        if (m === -1) cls += ' mastery-red';
+        else if (m === 1) cls += ' mastery-orange';
+        if (!revealed) cls += ' hidden';
+        div.className = cls;
+        const span = document.createElement('span');
+        span.className   = 'word-text';
+        span.textContent = w.keyword;
+        div.appendChild(span);
+        if (pending) div.addEventListener('click', () => showHint(w));
+        wordListEl.appendChild(div);
+      }
+    }
+
     function render() {
-      renderProgress();
+      renderExtraCounter();
       renderGrid();
+      renderWordList();
       // Reset overlay visibility when re-entering idle
       modalOverlay.classList.remove('visible');
-      feedbackOverlay.classList.remove('visible', 'correct', 'wrong');
+      feedbackOverlay.classList.remove('visible', 'correct', 'wrong', 'hint');
       selectionStrip.classList.remove('visible');
     }
 
-    function renderProgress() {
-      const total   = state.allWords.filter(w => w.target).length;
-      const cleared = total - state.pendingTargets.length;
-      progressText.textContent  = `${cleared} / ${total}`;
-      progressFill.style.width  = `${(cleared / total) * 100}%`;
+    function renderExtraCounter() {
+      $('extra-found').textContent = state.extraFound.size;
+      $('extra-total').textContent = state.bonuses.size;
     }
 
     function renderGrid() {
@@ -502,9 +821,26 @@
         state.holdTimer = null;
       }
       gridEl.innerHTML = '';
+
+      // Build single-kanji word status: 'present' (blue) or 'found' (green)
+      const singleKanjiStatus = new Map();
+      for (const w of state.allWords) {
+        if (w.kanji.length !== 1) continue;
+        const ch = w.kanji[0];
+        if (!state.gridKanji.includes(ch)) continue;
+        const isFound = state.targets.has(w)
+          ? !state.pendingTargets.includes(w)
+          : state.extraFound.has(w);
+        const cur = singleKanjiStatus.get(ch);
+        if (!cur || (isFound && cur !== 'found')) {
+          singleKanjiStatus.set(ch, isFound ? 'found' : 'present');
+        }
+      }
+
       state.gridKanji.forEach(kanji => {
         const cell = document.createElement('div');
         cell.className    = 'kanji-cell';
+        if (singleKanjiStatus.get(kanji) === 'present') cell.classList.add('word-present');
         cell.textContent  = kanji;
         cell.dataset.kanji = kanji;
 
@@ -576,11 +912,11 @@
     }
 
     function matchWord(query) {
-      const matches = state.allWords.filter(w => w._stripped === query);
+      const matches = state.allWords.filter(w => w.kanji.join('') === query);
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
 
-      // Multiple matches: prefer uncleared targets
+      // Multiple matches: prefer uncleared pending targets
       const pending = matches.filter(w => state.pendingTargets.includes(w));
       if (pending.length > 0) return pending[Math.floor(Math.random() * pending.length)];
       return matches[Math.floor(Math.random() * matches.length)];
@@ -595,38 +931,70 @@
     }
 
     function showQuestion(word) {
-      state.currentWord = word;
-      state.mode        = 'question';
+      state.currentWord  = word;
+      state.mode         = 'question';
+      state.tiles        = generateTiles(word);
+      state.kanaSelected = [];
 
-      state.choices = shuffle([
-        word.reading,
-        ...word.distractors.map(d => d.reading),
-      ]);
+      modalWord.textContent = word.word;
 
-      modalWord.textContent = word.kanji;
-
-      choicesGrid.innerHTML = '';
-      state.choices.forEach(reading => {
+      const tilesEl = $('kana-tiles');
+      tilesEl.innerHTML = '';
+      state.tiles.forEach((kana, idx) => {
         const btn = document.createElement('button');
-        btn.className   = 'choice-btn';
-        btn.textContent = reading;
-        btn.addEventListener('click', () => handleAnswer(reading));
-        choicesGrid.appendChild(btn);
+        btn.className = 'kana-tile';
+        btn.textContent = kana;
+        btn.dataset.tileIdx = idx;
+        btn.addEventListener('click', () => handleKanaTap(idx));
+        tilesEl.appendChild(btn);
       });
 
+      updateKanaAnswer();
       modalOverlay.classList.add('visible');
     }
 
-    function handleAnswer(reading) {
-      modalOverlay.classList.remove('visible');
+    function handleKanaTap(idx) {
+      if (state.mode !== 'question') return;
+      const tileEl = $('kana-tiles').querySelector(`[data-tile-idx="${idx}"]`);
+      if (!tileEl || tileEl.classList.contains('used')) return;
+      tileEl.classList.add('used');
+      state.kanaSelected.push(idx);
+      updateKanaAnswer();
+      if (state.kanaSelected.length === state.currentWord.hiragana.length) {
+        const submitted = state.kanaSelected.map(i => state.tiles[i]);
+        const isCorrect = submitted.every((k, i) => k === state.currentWord.hiragana[i]);
+        modalOverlay.classList.remove('visible');
+        handleAnswer(isCorrect);
+      }
+    }
 
-      const isCorrect = reading === state.currentWord.reading;
+    function updateKanaAnswer() {
+      $('kana-answer-text').textContent = state.kanaSelected.map(i => state.tiles[i]).join('');
+    }
+
+    function handleAnswer(isCorrect) {
       state.answeredCount++;
       if (!isCorrect) state.wrongCount++;
       state.lastCorrect = isCorrect;
 
-      if (isCorrect && state.currentWord.target) {
-        state.pendingTargets = state.pendingTargets.filter(w => w !== state.currentWord);
+      const w = state.currentWord;
+      const isTarget = state.targets.has(w);
+
+      if (isTarget) {
+        if (isCorrect) {
+          state.revealedWords.add(w);
+          const m = state.mastery.get(w) ?? 0;
+          if (m === 0 || m >= 2) {
+            state.pendingTargets = state.pendingTargets.filter(x => x !== w);
+          } else {
+            state.mastery.set(w, m === -1 ? 1 : m + 1);
+          }
+        } else {
+          if (!state.masteryExemptKeywords.has(w.keyword)) state.mastery.set(w, -1);
+          state.blockedTargets.set(w, 3);
+        }
+      } else if (isCorrect) {
+        state.extraFound.add(w);
       }
 
       showFeedback(isCorrect);
@@ -635,28 +1003,47 @@
     function showFeedback(isCorrect) {
       state.mode = 'feedback';
 
-      feedbackOverlay.classList.remove('correct', 'wrong');
+      feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
       feedbackOverlay.classList.add(isCorrect ? 'correct' : 'wrong', 'visible');
 
       feedbackIcon.textContent    = isCorrect ? '✓' : '✗';
-      feedbackReading.textContent = state.currentWord.reading;
-      feedbackMeaning.textContent = state.currentWord.meaning;
+      feedbackReading.textContent = state.currentWord.hiragana.join('');
+      feedbackMeaning.textContent = state.currentWord.keyword;
 
       if (isCorrect) {
-        setTimeout(dismissFeedback, 1000);
+        setTimeout(dismissFeedback, CORRECT_DISMISS_MS);
       }
       // Wrong: waits for "Got it" button — handled by event listener
     }
 
+    function showHint(word) {
+      if (state.mode !== 'idle') return;
+      if (!state.masteryExemptKeywords.has(word.keyword)) state.mastery.set(word, -1);
+      state.revealedWords.add(word);
+      state.blockedTargets.set(word, 3);
+      state.currentWord = word;
+      state.mode        = 'feedback';
+      state.isHint      = true;
+
+      feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
+      feedbackOverlay.classList.add('correct', 'hint', 'visible');
+
+      feedbackIcon.textContent    = word.word;
+      feedbackReading.textContent = word.hiragana.join('');
+      feedbackMeaning.textContent = word.keyword;
+    }
+
     function dismissFeedback() {
       if (!feedbackOverlay.classList.contains('visible')) return;
-      feedbackOverlay.classList.remove('visible', 'correct', 'wrong');
+      feedbackOverlay.classList.remove('visible', 'correct', 'wrong', 'hint');
 
       if (state.pendingTargets.length === 0) {
         showComplete();
         return;
       }
 
+      state.mode   = 'idle';
+      state.isHint = false;
       buildGridAndRender();
     }
 
@@ -664,7 +1051,7 @@
       state.mode = 'complete';
       completeScreen.classList.add('visible');
 
-      const total   = state.allWords.filter(w => w.target).length;
+      const total   = state.targets.size;
       const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
       const mins    = String(Math.floor(elapsed / 60)).padStart(2, '0');
       const secs    = String(elapsed % 60).padStart(2, '0');
@@ -680,17 +1067,16 @@
     }
 
     // ── Boot ─────────────────────────────────────────────────────────────────
-    // Integration-verified: all five flows (single-tap, multi-select, session
-    // complete, no-match, cancel) and all eight specific checks pass.
-    const data = await fetch('./group1.json').then(r => {
+    const data = await fetch('./kandy_core_vocab.json').then(r => {
       if (!r.ok) throw new Error(`Failed to load data: ${r.status}`);
       return r.json();
     }).catch(err => {
-      document.body.innerHTML = `<p style="padding:24px;font-family:sans-serif;color:#c62828;">Could not load group1.json. Serve this file over HTTP (e.g. python3 -m http.server).<br><small>${err.message}</small></p>`;
+      document.body.innerHTML = `<p style="padding:24px;font-family:sans-serif;color:#c62828;">Could not load kandy_core_vocab.json. Serve this file over HTTP (e.g. python3 -m http.server).<br><small>${err.message}</small></p>`;
       throw err;
     });
-    data.words.forEach(w => { w._stripped = stripHiragana(w.kanji); });
-    initSession(data.words, data.kanji_pool);
+    state.dataset = data.words;
+    state.datasetByKeyword = new Map(data.words.map(w => [w.keyword, w]));
+    initSession();
   </script>
 </body>
 </html>
