@@ -1,7 +1,6 @@
 """Build kandy_core_vocab.json from kandy_core_vocab.xlsx."""
 import json
 import sys
-from collections import defaultdict
 from pathlib import Path
 
 from openpyxl import load_workbook
