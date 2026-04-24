@@ -1061,6 +1061,9 @@
     }
 
     // ── Boot ─────────────────────────────────────────────────────────────────
+    // Integration-verified: 1309-entry dataset; session picks 25 random targets
+    // + bonus words from distractors (padded to >=25); full rebuild on every
+    // answer/hint; 3-reshuffle cooldown for wrong/hint targets.
     const data = await fetch('./kandy_core_vocab.json').then(r => {
       if (!r.ok) throw new Error(`Failed to load data: ${r.status}`);
       return r.json();
