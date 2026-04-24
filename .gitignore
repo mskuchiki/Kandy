@@ -1,0 +1,10 @@
+# Local tooling / editor state
+.claude/
+.superpowers/
+
+# Excel lock files
+~$*.xlsx
+
+# Python build-script artifacts
+__pycache__/
+*.pyc
