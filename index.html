@@ -564,7 +564,7 @@
     // ── Button handlers ───────────────────────────────────────────────────────
     $('btn-confirm').addEventListener('click', () => {
       if (state.mode !== 'selecting' || state.selected.length === 0) return;
-      submitSelection([...state.selected]);
+      submitSelection(state.selected.map(i => state.gridKanji[i]));
     });
 
     $('btn-cancel').addEventListener('click', () => {
@@ -834,12 +834,13 @@
         }
       }
 
-      state.gridKanji.forEach(kanji => {
+      state.gridKanji.forEach((kanji, idx) => {
         const cell = document.createElement('div');
         cell.className    = 'kanji-cell';
         if (singleKanjiStatus.get(kanji) === 'present') cell.classList.add('word-present');
-        cell.textContent  = kanji;
+        cell.textContent   = kanji;
         cell.dataset.kanji = kanji;
+        cell.dataset.index = idx;
 
         cell.addEventListener('pointerdown', e => {
           e.preventDefault();
@@ -851,13 +852,14 @@
             state.holdTimer = setTimeout(() => {
               state.holdTimer = null;
               state.mode      = 'selecting';
-              state.selected  = [kanji];
+              state.selected  = [idx];
               updateSelectionStrip();
             }, 250);
           } else if (state.mode === 'selecting') {
-            // Append to selection (no duplicates)
-            if (!state.selected.includes(kanji)) {
-              state.selected.push(kanji);
+            // Append this cell (cell identity, not kanji string — so two
+            // cells sharing a kanji can both be picked for words like 日曜日).
+            if (!state.selected.includes(idx)) {
+              state.selected.push(idx);
               updateSelectionStrip();
             }
           }
@@ -885,10 +887,9 @@
 
     function updateSelectionStrip() {
       selectionStrip.classList.toggle('visible', state.mode === 'selecting');
-      selectedDisplay.textContent = state.selected.join(' ');
-      // Highlight selected cells
+      selectedDisplay.textContent = state.selected.map(i => state.gridKanji[i]).join(' ');
       gridEl.querySelectorAll('.kanji-cell').forEach(cell => {
-        cell.classList.toggle('selected', state.selected.includes(cell.dataset.kanji));
+        cell.classList.toggle('selected', state.selected.includes(Number(cell.dataset.index)));
       });
     }
 
