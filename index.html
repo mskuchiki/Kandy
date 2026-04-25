@@ -3,45 +3,130 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#2196f3">
+  <meta name="theme-color" content="#0c0b09">
   <meta name="description" content="Tap kanji on a 5×5 grid to identify Japanese words.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Kandy">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <title>Kanji Grid Study</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+  <title>Kandy · 漢字</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --color-bg: #ffffff;
-      --color-text: #1a1a1a;
-      --color-cell-bg: #f8f8f8;
-      --color-cell-border: #ddd;
-      --color-cell-selected-bg: #e3f0ff;
-      --color-cell-selected-border: #4a90d9;
-      --color-correct: #2e7d32;
-      --color-correct-bg: #e8f5e9;
-      --color-wrong: #c62828;
-      --color-wrong-bg: #ffebee;
-      --color-progress: #4a90d9;
-      --font-jp: 'Hiragino Sans', 'Meiryo', 'Noto Sans JP', sans-serif;
+      --bg:           #0c0b09;
+      --surface:      #161412;
+      --surface-2:    #1e1c19;
+      --surface-3:    #252320;
+      --border:       rgba(255,255,255,0.07);
+      --border-mid:   rgba(255,255,255,0.11);
+      --text:         #f0ebe4;
+      --text-muted:   #6b6560;
+      --text-dim:     #3a3833;
+
+      --accent:       #6b9fff;
+      --accent-glow:  rgba(107, 159, 255, 0.18);
+      --accent-ring:  rgba(107, 159, 255, 0.5);
+
+      --correct:      #5cc97a;
+      --correct-glow: rgba(92, 201, 122, 0.15);
+      --wrong:        #f06060;
+      --wrong-glow:   rgba(240, 96, 96, 0.15);
+      --orange:       #f09a3e;
+
+      --font-jp:  'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+      --font-ui:  'Inter', -apple-system, sans-serif;
+      --font-grid:'Hiragino Sans', 'Meiryo', 'Noto Sans JP', sans-serif;
+
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
+    /* ── Keyframes ─────────────────────────────── */
+    @keyframes fadeIn      { from { opacity:0 } to { opacity:1 } }
+    @keyframes fadeInUp    { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes scaleIn     { from { opacity:0; transform:scale(0.92) } to { opacity:1; transform:scale(1) } }
+    @keyframes sheetUp     { from { transform:translateY(72px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+    @keyframes stripSlide  { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes wordIn      { from { opacity:0; transform:translateY(5px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes iconPop     { 0%{transform:scale(0.4);opacity:0} 60%{transform:scale(1.18);opacity:1} 100%{transform:scale(1)} }
+    @keyframes cellPop     { 0%{transform:scale(1)} 35%{transform:scale(0.86)} 75%{transform:scale(1.08)} 100%{transform:scale(1)} }
+    @keyframes glowPulse   { 0%,100%{box-shadow: 0 0 0 0 var(--accent-glow), inset 0 0 0 1px var(--border)} 50%{box-shadow: 0 0 18px 4px var(--accent-glow), inset 0 0 0 1px rgba(107,159,255,0.2)} }
+
+    /* ── Base ──────────────────────────────────── */
     body {
-      font-family: var(--font-jp);
-      background: var(--color-bg);
-      color: var(--color-text);
+      font-family: var(--font-grid);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 16px;
+      padding: 0 14px 32px;
       user-select: none;
       -webkit-user-select: none;
     }
 
+    /* ── Header ────────────────────────────────── */
+    #app-header {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 2px 14px;
+    }
+
+    .header-wordmark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-kanji {
+      font-family: var(--font-jp);
+      font-size: 20px;
+      color: var(--text);
+      letter-spacing: 2px;
+      opacity: 0.9;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 14px;
+      background: var(--border-mid);
+    }
+
+    .header-latin {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .header-extra {
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 13px;
+      letter-spacing: 0.01em;
+    }
+
+    .header-extra span {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── App ───────────────────────────────────── */
     #app {
       width: 100%;
       max-width: 500px;
@@ -50,104 +135,7 @@
       gap: 12px;
     }
 
-    /* ── Main layout ──────────────────────── */
-    #main-area {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    #grid-section {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    /* ── Word list ────────────────────────── */
-    #word-list {
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 8px 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .word-item {
-      border: 1.5px solid #eee;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 12px;
-      background: #f8f8f8;
-      color: #ccc;
-    }
-
-    .word-item.pending {
-      cursor: pointer;
-      color: #888;
-      border-color: #ddd;
-    }
-
-    .word-item.pending.formable {
-      color: #1a1a1a;
-      font-weight: 600;
-      border-color: #bbb;
-      text-decoration: underline;
-    }
-
-    .word-item.pending.mastery-red {
-      background: #ffebee;
-      border-color: #e57373;
-      color: #c62828;
-    }
-
-    .word-item.pending.mastery-orange {
-      background: #fff3e0;
-      border-color: #ffb74d;
-      color: #e65100;
-    }
-
-    .word-item.pending:hover {
-      border-color: #4a90d9;
-      color: #4a90d9;
-    }
-
-    .word-item.cleared {
-      text-decoration: line-through;
-      color: #ccc;
-      border-color: #eee;
-      background: #fff;
-    }
-
-    /* ── Extra counter ────────────────────── */
-    #extra-counter {
-      font-size: 13px;
-      color: #555;
-      text-align: center;
-    }
-
-    /* ── Reveal button ────────────────────── */
-    #btn-reveal {
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-family: var(--font-jp);
-      font-size: 12px;
-      color: #555;
-      cursor: pointer;
-    }
-    #btn-reveal:hover { background: #eee; }
-
-    /* ── Word text blur ───────────────────── */
-    .word-text { transition: filter 0.3s; }
-    .word-item.hidden .word-text {
-      filter: blur(5px);
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    /* ── Kanji grid ───────────────────────── */
+    /* ── Grid ──────────────────────────────────── */
     #grid-container {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
@@ -159,157 +147,343 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: clamp(28px, 10vw, 52px);
-      background: var(--color-cell-bg);
-      border: 2px solid var(--color-cell-border);
-      border-radius: 6px;
+      font-size: clamp(24px, 9vw, 48px);
+      font-family: var(--font-grid);
+      background: var(--surface);
+      border-radius: 12px;
       cursor: pointer;
       touch-action: none;
-      transition: background 0.1s, border-color 0.1s, transform 0.1s;
+      box-shadow: inset 0 0 0 1px var(--border), 0 2px 8px rgba(0,0,0,0.4);
+      color: var(--text);
+      transition: background 0.15s, box-shadow 0.15s, transform 0.12s var(--ease-out), color 0.15s;
+      will-change: transform;
     }
 
-    .kanji-cell:active { transform: scale(0.93); }
+    .kanji-cell.animating-in {
+      animation: fadeInUp 0.32s var(--ease-out) both;
+    }
 
-    .kanji-cell.word-present { background: #dbeeff; border-color: #a8ccf0; }
+    /* Single-kanji word is present on grid */
+    .kanji-cell.word-present {
+      background: #2e2b27;
+      box-shadow: inset 0 0 0 1px rgba(107,159,255,0.2), 0 0 12px 0 var(--accent-glow), 0 2px 8px rgba(0,0,0,0.4);
+      color: var(--accent);
+      animation: glowPulse 3s ease-in-out infinite;
+    }
 
     .kanji-cell.selected {
-      background: var(--color-cell-selected-bg);
-      border-color: var(--color-cell-selected-border);
-      font-weight: bold;
+      background: var(--surface-3);
+      box-shadow: inset 0 0 0 1px var(--accent-ring), 0 0 20px 2px var(--accent-glow), 0 2px 8px rgba(0,0,0,0.4);
+      color: var(--accent);
+      transform: scale(1.06);
     }
 
-    /* ── Selection strip ──────────────────── */
+    .kanji-cell.tapped {
+      animation: cellPop 0.26s var(--ease-out) both;
+    }
+
+    /* ── Selection strip ───────────────────────── */
     #selection-strip {
       display: none;
       align-items: center;
       gap: 10px;
-      flex-wrap: wrap;
-      background: #f0f4ff;
-      border: 1px solid #c0d0f0;
-      border-radius: 8px;
-      padding: 10px 12px;
+      background: var(--surface-2);
+      border-radius: 14px;
+      padding: 11px 14px;
+      box-shadow: inset 0 0 0 1px var(--border-mid), 0 4px 16px rgba(0,0,0,0.4);
     }
 
-    #selection-strip.visible { display: flex; }
+    #selection-strip.visible {
+      display: flex;
+      animation: stripSlide 0.22s var(--ease-out) both;
+    }
 
-    .strip-label { font-size: 12px; color: #666; }
+    .strip-label {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
 
     #selected-display {
-      font-size: 24px;
+      font-size: 22px;
       flex: 1;
-      letter-spacing: 4px;
+      letter-spacing: 5px;
+      color: var(--text);
     }
 
     .strip-btn {
       border: none;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-family: var(--font-jp);
-      font-size: 13px;
+      border-radius: 9px;
+      padding: 7px 14px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .strip-btn:active { transform: scale(0.94); }
+
+    #btn-confirm {
+      background: var(--accent);
+      color: #000;
+    }
+    #btn-cancel {
+      background: var(--surface-3);
+      color: var(--text-muted);
     }
 
-    #btn-confirm { background: #4a90d9; color: #fff; }
-    #btn-cancel  { background: #fff; color: #666; border: 1px solid #ccc; }
+    /* ── Word section ──────────────────────────── */
+    #word-section {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: inset 0 0 0 1px var(--border), 0 4px 16px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
 
-    /* ── Toast ────────────────────────────── */
+    .section-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    #btn-reveal {
+      background: none;
+      border: 1px solid var(--border-mid);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    #btn-reveal:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    /* ── Word list ─────────────────────────────── */
+    #word-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 6px 6px 6px 25px;
+      gap: 2px;
+    }
+
+    .word-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      color: var(--text-dim);
+      background: transparent;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      cursor: default;
+    }
+
+    .word-item::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-dim);
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+
+    .word-item.animating-in {
+      animation: wordIn 0.22s var(--ease-out) both;
+    }
+
+    .word-item.pending {
+      cursor: pointer;
+      color: #5a5650;
+    }
+    .word-item.pending::before { background: #353330; }
+
+    .word-item.pending.formable {
+      color: var(--text);
+      font-weight: 500;
+    }
+    .word-item.pending.formable .word-text {
+      text-decoration: underline;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 3px;
+    }
+    .word-item.pending.formable::before {
+      background: var(--accent);
+      box-shadow: 0 0 6px 1px var(--accent-glow);
+      transform: scale(1.3);
+    }
+
+    .word-item.pending.mastery-red  { color: var(--wrong); }
+    .word-item.pending.mastery-red::before  { background: var(--wrong); box-shadow: 0 0 5px var(--wrong-glow); }
+
+    .word-item.pending.mastery-orange { color: var(--orange); }
+    .word-item.pending.mastery-orange::before { background: var(--orange); }
+
+    .word-item.pending:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+    .word-item.pending:hover::before { background: var(--accent); }
+    .word-item.pending:active { transform: scale(0.96); }
+
+    .word-item.cleared {
+      color: #2a2926;
+    }
+    .word-item.cleared::before { background: #232220; }
+    .word-item.cleared .word-text { text-decoration: line-through; text-decoration-color: #333; }
+
+    .word-text {
+      transition: filter 0.3s ease;
+      /* Allow wrapping so the right column has room when the left
+         column is pushed away from the card border. */
+      overflow-wrap: anywhere;
+    }
+    .word-item.hidden .word-text {
+      filter: blur(4px);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Toast ─────────────────────────────────── */
     #toast {
       position: fixed;
-      bottom: 30px;
+      bottom: 36px;
       left: 50%;
-      transform: translateX(-50%) translateY(12px);
-      background: rgba(0,0,0,0.72);
-      color: #fff;
-      padding: 8px 20px;
-      border-radius: 20px;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(30, 28, 25, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-mid);
+      color: var(--text);
+      padding: 9px 20px;
+      border-radius: 24px;
+      font-family: var(--font-ui);
       font-size: 13px;
+      font-weight: 500;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s, transform 0.2s;
+      transition: opacity 0.18s ease, transform 0.18s var(--ease-out);
       white-space: nowrap;
       z-index: 500;
     }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ── Question modal ───────────────────── */
+    /* ── Modal (bottom sheet) ──────────────────── */
     #modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(255,255,255,0.88);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
       z-index: 100;
-      align-items: center;
+      align-items: flex-end;
       justify-content: center;
-      padding: 24px;
+    }
+    #modal-overlay.visible {
+      display: flex;
+      animation: fadeIn 0.2s ease both;
     }
 
-    #modal-overlay.visible { display: flex; }
-
     #modal-box {
-      background: #fff;
-      border: 2px solid #1a1a1a;
-      border-radius: 14px;
-      padding: 28px 20px;
+      background: var(--surface);
+      border-radius: 24px 24px 0 0;
+      padding: 10px 22px 44px;
       width: 100%;
-      max-width: 340px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+      max-width: 500px;
+      box-shadow: 0 -1px 0 var(--border-mid), 0 -20px 60px rgba(0,0,0,0.6);
+      animation: sheetUp 0.32s var(--ease-out) both;
+    }
+
+    .modal-handle {
+      width: 32px;
+      height: 3px;
+      background: var(--surface-3);
+      border-radius: 2px;
+      margin: 0 auto 18px;
     }
 
     #modal-word {
       text-align: center;
-      font-size: 52px;
-      font-weight: bold;
-      margin-bottom: 24px;
-      letter-spacing: 4px;
-      min-height: 72px;
+      font-family: var(--font-jp);
+      font-size: 60px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 22px;
+      letter-spacing: 6px;
+      line-height: 1;
     }
 
     #kana-tiles {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 7px;
       justify-content: center;
       margin-bottom: 14px;
     }
 
     .kana-tile {
-      background: #f5f5f5;
-      border: 1.5px solid #ccc;
-      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-mid);
+      border-radius: 10px;
       padding: 10px 14px;
-      font-family: var(--font-jp);
+      font-family: var(--font-grid);
       font-size: 20px;
+      color: var(--text);
       cursor: pointer;
       min-width: 44px;
       text-align: center;
-      transition: background 0.1s, opacity 0.15s;
+      transition: background 0.12s, opacity 0.15s, transform 0.12s var(--ease-out), box-shadow 0.12s;
     }
-
-    .kana-tile:hover:not(.used) { background: #eaeaea; }
-    .kana-tile.used { opacity: 0.28; pointer-events: none; }
+    .kana-tile:hover:not(.used) {
+      background: var(--surface-3);
+      box-shadow: 0 0 10px var(--accent-glow);
+      border-color: rgba(107,159,255,0.3);
+    }
+    .kana-tile.tapped { animation: cellPop 0.22s var(--ease-out) both; }
+    .kana-tile.used   { opacity: 0.2; pointer-events: none; }
 
     #kana-answer {
       display: flex;
       align-items: center;
       gap: 10px;
-      min-height: 48px;
-      background: #f0f4ff;
-      border: 1px solid #c0d0f0;
-      border-radius: 8px;
-      padding: 8px 12px;
+      min-height: 54px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-mid);
+      border-radius: 12px;
+      padding: 10px 14px;
     }
 
     #kana-answer-text {
       flex: 1;
-      font-family: var(--font-jp);
-      font-size: 22px;
-      letter-spacing: 2px;
+      font-family: var(--font-grid);
+      font-size: 26px;
+      letter-spacing: 3px;
+      color: var(--text);
+      min-height: 32px;
     }
 
     #btn-backspace {
@@ -317,26 +491,31 @@
       border: none;
       font-size: 20px;
       cursor: pointer;
-      color: #999;
+      color: var(--text-muted);
       padding: 4px 8px;
       line-height: 1;
+      transition: color 0.1s, transform 0.1s;
     }
-    #btn-backspace:hover { color: #333; }
+    #btn-backspace:hover  { color: var(--text); }
+    #btn-backspace:active { transform: scale(0.85); }
 
     #btn-modal-reveal {
-      margin-top: 14px;
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-family: var(--font-jp);
-      font-size: 13px;
-      color: #666;
+      display: block;
+      margin: 14px auto 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 22px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
       cursor: pointer;
+      transition: background 0.15s, color 0.15s;
     }
-    #btn-modal-reveal:hover { background: #eee; color: #333; }
+    #btn-modal-reveal:hover { background: var(--surface-2); color: var(--text); }
 
-    /* ── Feedback overlay ─────────────────── */
+    /* ── Feedback overlay ──────────────────────── */
     #feedback-overlay {
       display: none;
       position: fixed;
@@ -345,93 +524,185 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-
-    #feedback-overlay.visible { display: flex; }
-    #feedback-overlay.correct { background: rgba(232,245,233,0.96); }
-    #feedback-overlay.wrong   { background: rgba(255,235,238,0.96); }
+    #feedback-overlay.visible { display: flex; animation: fadeIn 0.18s ease both; }
+    #feedback-overlay.correct { background: rgba(10, 20, 12, 0.88); }
+    #feedback-overlay.wrong   { background: rgba(20, 8, 8, 0.92); }
 
     #feedback-box {
-      background: #fff;
-      border-radius: 14px;
-      padding: 32px 24px;
+      background: var(--surface);
+      border-radius: 22px;
+      padding: 40px 28px 36px;
       width: 100%;
       max-width: 340px;
       text-align: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      box-shadow: inset 0 0 0 1px var(--border-mid), 0 24px 60px rgba(0,0,0,0.7);
+      animation: scaleIn 0.24s var(--ease-out) both;
     }
 
-    #feedback-icon   { font-size: 48px; margin-bottom: 8px; min-height: 48px; }
-    #feedback-word    { font-size: 36px; font-weight: 500; margin-bottom: 8px; font-family: var(--font-jp); }
-    #feedback-reading { font-size: 28px; font-weight: bold; margin-bottom: 8px; }
-    #feedback-meaning { font-size: 16px; color: #555; margin-bottom: 20px; }
+    #feedback-icon {
+      font-size: 36px;
+      margin-bottom: 14px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #feedback-overlay.correct #feedback-icon { color: var(--correct); }
+    #feedback-overlay.wrong   #feedback-icon { color: var(--wrong); }
+    #feedback-icon.animating  { animation: iconPop 0.28s var(--ease-out) both; }
 
-    #feedback-overlay.correct #feedback-reading { color: var(--color-correct); }
-    #feedback-overlay.wrong   #feedback-reading { color: var(--color-wrong); }
+    #feedback-word {
+      font-family: var(--font-jp);
+      font-size: 46px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1;
+      letter-spacing: 4px;
+    }
+
+    #feedback-reading {
+      font-family: var(--font-grid);
+      font-size: 24px;
+      font-weight: 400;
+      margin-bottom: 6px;
+    }
+    #feedback-overlay.correct #feedback-reading { color: var(--correct); }
+    #feedback-overlay.wrong   #feedback-reading { color: var(--wrong); }
+
+    #feedback-meaning {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      font-weight: 400;
+    }
 
     #btn-got-it {
       display: none;
-      background: var(--color-wrong);
-      color: #fff;
       border: none;
-      border-radius: 8px;
-      padding: 12px 32px;
-      font-family: var(--font-jp);
-      font-size: 15px;
+      border-radius: 12px;
+      padding: 13px 40px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
+      transition: opacity 0.15s, transform 0.12s;
     }
+    #btn-got-it:active { transform: scale(0.96); }
+    #feedback-overlay.wrong #btn-got-it { display: inline-block; background: var(--wrong); color: #fff; }
+    #feedback-overlay.hint  #btn-got-it { display: inline-block; background: var(--surface-3); color: var(--text); border: 1px solid var(--border-mid); }
 
-    #feedback-overlay.wrong #btn-got-it { display: inline-block; }
-    #feedback-overlay.hint  #btn-got-it { display: inline-block; background: var(--color-correct); }
-
-    /* ── Session complete ─────────────────── */
+    /* ── Session complete ──────────────────────── */
     #complete-screen {
       display: none;
       position: fixed;
       inset: 0;
       z-index: 300;
-      background: #fff;
+      background: var(--bg);
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 32px;
+      padding: 40px 32px;
       text-align: center;
-      gap: 14px;
+      gap: 10px;
+    }
+    #complete-screen.visible { display: flex; animation: fadeInUp 0.4s var(--ease-out) both; }
+
+    .complete-kanji {
+      font-family: var(--font-jp);
+      font-size: 48px;
+      color: var(--text);
+      margin-bottom: 12px;
+      opacity: 0.6;
+      letter-spacing: 8px;
     }
 
-    #complete-screen.visible { display: flex; }
-    #complete-screen h1  { font-size: 32px; }
-    .stat-row            { font-size: 16px; color: #444; }
+    #complete-screen h1 {
+      font-family: var(--font-ui);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .stat-row {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .stat-row strong { color: var(--text); font-weight: 600; }
+
+    /* Stats card */
+    .stats-card {
+      margin: 12px 0 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
     #btn-restart {
-      margin-top: 16px;
-      background: #1a1a1a;
-      color: #fff;
+      margin-top: 20px;
+      background: var(--text);
+      color: var(--bg);
       border: none;
-      border-radius: 8px;
-      padding: 14px 36px;
-      font-family: var(--font-jp);
-      font-size: 16px;
+      border-radius: 14px;
+      padding: 14px 44px;
+      font-family: var(--font-ui);
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
+      transition: opacity 0.15s, transform 0.12s;
     }
+    #btn-restart:hover  { opacity: 0.88; }
+    #btn-restart:active { transform: scale(0.96); }
   </style>
 </head>
 <body>
+
+  <div id="app-header">
+    <div class="header-wordmark">
+      <span class="header-kanji">漢字</span>
+      <div class="header-divider"></div>
+      <span class="header-latin">Kandy</span>
+    </div>
+    <div class="header-extra">
+      Extra: <span id="extra-found">0</span> / <span id="extra-total">0</span>
+    </div>
+  </div>
+
   <div id="app">
-    <div id="main-area">
-      <div id="grid-section">
-        <div id="extra-counter">
-          Extra words: <span id="extra-found">0</span> / <span id="extra-total">0</span>
-        </div>
-        <div id="grid-container"></div>
-        <div id="selection-strip">
-          <span class="strip-label">Selected:</span>
-          <span id="selected-display"></span>
-          <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
-          <button id="btn-cancel"  class="strip-btn">✕ Cancel</button>
-        </div>
+    <div id="grid-container"></div>
+
+    <div id="selection-strip">
+      <span class="strip-label">Selected</span>
+      <span id="selected-display"></span>
+      <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
+      <button id="btn-cancel"  class="strip-btn">✕</button>
+    </div>
+
+    <div id="word-section">
+      <div class="section-row">
+        <span class="section-label">Words</span>
+        <button id="btn-reveal">Reveal a word</button>
       </div>
-      <button id="btn-reveal">Reveal a word</button>
       <div id="word-list"></div>
     </div>
   </div>
@@ -440,6 +711,7 @@
 
   <div id="modal-overlay">
     <div id="modal-box">
+      <div class="modal-handle"></div>
       <div id="modal-word"></div>
       <div id="kana-tiles"></div>
       <div id="kana-answer">
@@ -461,11 +733,14 @@
   </div>
 
   <div id="complete-screen">
-    <h1>Session Complete!</h1>
-    <div class="stat-row" id="stat-cleared"></div>
-    <div class="stat-row" id="stat-attempts"></div>
-    <div class="stat-row" id="stat-accuracy"></div>
-    <div class="stat-row" id="stat-time"></div>
+    <div class="complete-kanji">完了</div>
+    <h1>Session Complete</h1>
+    <div class="stats-card">
+      <div class="stat-row" id="stat-cleared"></div>
+      <div class="stat-row" id="stat-attempts"></div>
+      <div class="stat-row" id="stat-accuracy"></div>
+      <div class="stat-row" id="stat-time"></div>
+    </div>
     <button id="btn-restart">Start Over</button>
   </div>
 
@@ -482,8 +757,6 @@
 
     const sample = (arr, n) => shuffle(arr).slice(0, Math.min(n, arr.length));
 
-    // Multiset subset check: every element of `needles` (with multiplicity)
-    // must be present in `haystack`. Both are arrays of strings.
     function isSubMultiset(needles, haystack) {
       const counts = new Map();
       for (const ch of haystack) counts.set(ch, (counts.get(ch) ?? 0) + 1);
@@ -496,32 +769,17 @@
     }
 
     const HIRAGANA_POOL = [
-      "あ","い","う","え","お",
-      "か","き","く","け","こ",
-      "さ","し","す","せ","そ",
-      "た","ち","つ","て","と",
-      "な","に","ぬ","ね","の",
-      "は","ひ","ふ","へ","ほ",
-      "ま","み","む","め","も",
-      "や","ゆ","よ",
-      "ら","り","る","れ","ろ",
-      "わ","を","ん",
-      "が","ぎ","ぐ","げ","ご",
-      "ざ","じ","ず","ぜ","ぞ",
-      "だ","ぢ","づ","で","ど",
-      "ば","び","ぶ","べ","ぼ",
-      "ぱ","ぴ","ぷ","ぺ","ぽ",
-      "っ",
-      "きゃ","きゅ","きょ",
-      "しゃ","しゅ","しょ",
-      "ちゃ","ちゅ","ちょ",
-      "にゃ","にゅ","にょ",
-      "ひゃ","ひゅ","ひょ",
-      "みゃ","みゅ","みょ",
-      "りゃ","りゅ","りょ",
-      "ぎゃ","ぎゅ","ぎょ",
-      "じゃ","じゅ","じょ",
-      "びゃ","びゅ","びょ",
+      "あ","い","う","え","お","か","き","く","け","こ",
+      "さ","し","す","せ","そ","た","ち","つ","て","と",
+      "な","に","ぬ","ね","の","は","ひ","ふ","へ","ほ",
+      "ま","み","む","め","も","や","ゆ","よ","ら","り",
+      "る","れ","ろ","わ","を","ん","が","ぎ","ぐ","げ",
+      "ご","ざ","じ","ず","ぜ","ぞ","だ","ぢ","づ","で",
+      "ど","ば","び","ぶ","べ","ぼ","ぱ","ぴ","ぷ","ぺ",
+      "ぽ","っ","きゃ","きゅ","きょ","しゃ","しゅ","しょ",
+      "ちゃ","ちゅ","ちょ","にゃ","にゅ","にょ","ひゃ","ひゅ",
+      "ひょ","みゃ","みゅ","みょ","りゃ","りゅ","りょ","ぎゃ",
+      "ぎゅ","ぎょ","じゃ","じゅ","じょ","びゃ","びゅ","びょ",
       "ぴゃ","ぴゅ","ぴょ",
     ];
 
@@ -539,35 +797,16 @@
 
     // ── State ─────────────────────────────────────────────────────────────────
     const state = {
-      // dataset (loaded once, kept immutable)
-      dataset: [],          // full JSON words array (1309)
-      datasetByKeyword: new Map(),
-      // session
-      targets: new Set(),   // target word objects (25)
-      bonuses: new Set(),   // bonus word objects (>=25)
-      allWords: [],         // [...targets, ...bonuses]
-      sessionKanjiPool: [], // unique kanji across all session words
-      pendingTargets: [],
-      answeredCount: 0,
-      wrongCount: 0,
-      startTime: null,
-      // grid
-      gridKanji: [],
-      formableWords: [],
-      // interaction
-      mode: 'idle',
-      selected: [],
-      holdTimer: null,
-      // question
-      currentWord: null,
-      tiles: [],
-      kanaSelected: [],
-      mastery: new Map(),
-      masteryExemptKeywords: new Set(),
-      revealedWords: new Set(),
-      extraFound: new Set(),
-      blockedTargets: new Map(),  // target word -> remaining reshuffles (wrong answer only)
-      hintPending: new Set(),     // target words whose next correct tap is a "free pass"
+      dataset: [], datasetByKeyword: new Map(),
+      targets: new Set(), bonuses: new Set(), allWords: [],
+      sessionKanjiPool: [], pendingTargets: [],
+      answeredCount: 0, wrongCount: 0, startTime: null,
+      gridKanji: [], formableWords: [],
+      mode: 'idle', selected: [], holdTimer: null,
+      currentWord: null, tiles: [], kanaSelected: [],
+      mastery: new Map(), masteryExemptKeywords: new Set(),
+      revealedWords: new Set(), extraFound: new Set(),
+      blockedTargets: new Map(), hintPending: new Set(),
     };
 
     // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -593,8 +832,7 @@
     });
 
     $('btn-cancel').addEventListener('click', () => {
-      state.mode     = 'idle';
-      state.selected = [];
+      state.mode = 'idle'; state.selected = [];
       updateSelectionStrip();
     });
 
@@ -618,10 +856,7 @@
       const candidates = state.formableWords.filter(w =>
         state.targets.has(w) && state.pendingTargets.includes(w) && !state.revealedWords.has(w)
       );
-      if (candidates.length === 0) {
-        showToast('All visible words already revealed');
-        return;
-      }
+      if (candidates.length === 0) { showToast('All visible words already revealed'); return; }
       const word = candidates[Math.floor(Math.random() * candidates.length)];
       state.revealedWords.add(word);
       renderWordList();
@@ -635,11 +870,9 @@
     // ── Session init ──────────────────────────────────────────────────────────
     function initSession() {
       const dataset = state.dataset;
-      // 1. Pick 25 random targets (without replacement)
       const targetList = sample(dataset, 25);
       const targetSet = new Set(targetList);
 
-      // 2. Union of distractors, excluding any target
       const bonusSet = new Set();
       for (const t of targetList) {
         for (const kw of t.distractors) {
@@ -647,46 +880,32 @@
           if (w && !targetSet.has(w)) bonusSet.add(w);
         }
       }
-
-      // 3. Pad to >= 25 bonuses with random non-target, non-bonus words
       if (bonusSet.size < 25) {
         const pool = dataset.filter(w => !targetSet.has(w) && !bonusSet.has(w));
-        const needed = 25 - bonusSet.size;
-        for (const w of sample(pool, needed)) bonusSet.add(w);
+        for (const w of sample(pool, 25 - bonusSet.size)) bonusSet.add(w);
       }
 
-      state.targets       = targetSet;
-      state.bonuses       = bonusSet;
-      state.allWords      = [...targetSet, ...bonusSet];
+      state.targets = targetSet;
+      state.bonuses = bonusSet;
+      state.allWords = [...targetSet, ...bonusSet];
 
-      // 4. Session kanji pool: unique kanji union across all session words
       const poolSet = new Set();
-      for (const w of state.allWords) {
-        for (const ch of w.kanji) poolSet.add(ch);
-      }
+      for (const w of state.allWords) for (const ch of w.kanji) poolSet.add(ch);
       state.sessionKanjiPool = [...poolSet];
 
       state.pendingTargets = [...targetList];
-      state.answeredCount  = 0;
-      state.wrongCount     = 0;
-      state.startTime      = Date.now();
-      state.mode           = 'idle';
-      state.selected       = [];
-      state.currentWord    = null;
-      state.mastery        = new Map();
+      state.answeredCount = 0; state.wrongCount = 0;
+      state.startTime = Date.now();
+      state.mode = 'idle'; state.selected = []; state.currentWord = null;
+      state.mastery = new Map();
       state.masteryExemptKeywords = computeMasteryExemptKeywords(state.allWords, targetSet);
-      state.revealedWords  = new Set();
-      state.extraFound     = new Set();
-      state.blockedTargets = new Map();
-      state.hintPending    = new Set();
+      state.revealedWords = new Set(); state.extraFound = new Set();
+      state.blockedTargets = new Map(); state.hintPending = new Set();
       if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
       buildGridAndRender();
     }
 
-    function buildGridAndRender() {
-      buildGrid();
-      render();
-    }
+    function buildGridAndRender() { buildGrid(); render(); }
 
     // ── Grid build ────────────────────────────────────────────────────────────
     const GRID_SIZE = 25;
@@ -698,10 +917,8 @@
         if (!best || result.formableWords.length > best.formableWords.length) best = result;
         if (best.formableWords.length >= 5) break;
       }
-      state.gridKanji     = best.gridKanji;
+      state.gridKanji = best.gridKanji;
       state.formableWords = best.formableWords;
-
-      // Decrement cooldowns at the end of every rebuild.
       for (const [w, n] of state.blockedTargets) {
         if (n <= 1) state.blockedTargets.delete(w);
         else state.blockedTargets.set(w, n - 1);
@@ -709,27 +926,18 @@
     }
 
     function tryBuildGrid() {
-      const gridKanji = [];  // array (allows duplicates)
-      const addKanji  = ch => { gridKanji.push(ch); };
+      const gridKanji = [];
+      const addKanji = ch => { gridKanji.push(ch); };
 
-      // 1. Focus word: prefer unblocked pending target; fall back to any
-      //    pending target if all blocked (or only blocked target remaining).
-      let focusCandidates = state.pendingTargets.filter(
-        w => (state.blockedTargets.get(w) ?? 0) === 0
-      );
+      let focusCandidates = state.pendingTargets.filter(w => (state.blockedTargets.get(w) ?? 0) === 0);
       if (focusCandidates.length === 0) focusCandidates = state.pendingTargets;
 
       let focus = null;
       if (focusCandidates.length > 0) {
         focus = focusCandidates[Math.floor(Math.random() * focusCandidates.length)];
-        if (focus.kanji.length <= GRID_SIZE) {
-          for (const ch of focus.kanji) addKanji(ch);
-        }
+        if (focus.kanji.length <= GRID_SIZE) for (const ch of focus.kanji) addKanji(ch);
       }
 
-      // 2. Greedy pack: pending targets first, then bonuses, then cleared targets.
-      //    Blocked targets are excluded — their kanji shouldn't be forced into
-      //    the grid for 3 rebuilds after a wrong answer.
       const clearedTargets = [...state.targets].filter(w => !state.pendingTargets.includes(w));
       const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
       const packOrder = [
@@ -741,43 +949,24 @@
       for (const w of packOrder) {
         if (gridKanji.length >= GRID_SIZE) break;
         if (w.kanji.length === 0) continue;
-        // Extra kanji this word would need beyond what's already on the grid,
-        // respecting the word's own internal multiplicity.
         const needed = countsNeededBeyond(w.kanji, gridKanji);
-        if (needed.length === 0) continue;        // already fully formable
-        if (gridKanji.length + needed.length <= GRID_SIZE) {
-          for (const ch of needed) addKanji(ch);
-        }
+        if (needed.length === 0) continue;
+        if (gridKanji.length + needed.length <= GRID_SIZE) for (const ch of needed) addKanji(ch);
       }
 
-      // 3. Fill remaining slots with random kanji from the session pool
-      //    that aren't already at the slot count they'd need. Simpler: just
-      //    pull random pool kanji that don't already appear on the grid.
       if (gridKanji.length < GRID_SIZE) {
         const onGrid = new Set(gridKanji);
         const fill = shuffle(state.sessionKanjiPool.filter(ch => !onGrid.has(ch)));
-        for (const ch of fill) {
-          if (gridKanji.length >= GRID_SIZE) break;
-          addKanji(ch);
-        }
+        for (const ch of fill) { if (gridKanji.length >= GRID_SIZE) break; addKanji(ch); }
       }
 
-      if (gridKanji.length < GRID_SIZE) console.warn('Grid: could not fill 25 kanji');
-
       const shuffled = shuffle(gridKanji).slice(0, GRID_SIZE);
-
-      // 4. Compute formable words (multiset subset check against the grid).
-      //    Blocked targets are filtered out — they're unreachable for their
-      //    remaining cooldown so they shouldn't highlight as "formable".
       const formableWords = state.allWords.filter(
         w => w.kanji.length > 0 && !isBlocked(w) && isSubMultiset(w.kanji, shuffled)
       );
-
       return { gridKanji: shuffled, formableWords };
     }
 
-    // Returns the extra characters `needles` would add to `haystack` to
-    // be a sub-multiset. Empty array if already a sub-multiset.
     function countsNeededBeyond(needles, haystack) {
       const available = new Map();
       for (const ch of haystack) available.set(ch, (available.get(ch) ?? 0) + 1);
@@ -790,17 +979,11 @@
       return needed;
     }
 
-    const CORRECT_DISMISS_MS = 2000;
+    const CORRECT_DISMISS_MS = 1800;
 
-    // A multi-kanji target is mastery-exempt when any single kanji in it is
-    // also the complete kanji form of a non-target session word. A single-tap
-    // on that kanji would match the non-target, making a clean streak
-    // impossible for the target via tap alone.
     function computeMasteryExemptKeywords(allWords, targetSet) {
       const nonTargetSingleKanji = new Set(
-        allWords
-          .filter(w => !targetSet.has(w) && w.kanji.length === 1)
-          .map(w => w.kanji[0])
+        allWords.filter(w => !targetSet.has(w) && w.kanji.length === 1).map(w => w.kanji[0])
       );
       const exempt = new Set();
       for (const w of allWords) {
@@ -812,7 +995,11 @@
 
     // ── Render ────────────────────────────────────────────────────────────────
     function renderWordList() {
+      const prevItems = new Set(
+        [...wordListEl.querySelectorAll('.word-item')].map(el => el.dataset.keyword)
+      );
       wordListEl.innerHTML = '';
+      let delay = 0;
       for (const w of state.targets) {
         const div = document.createElement('div');
         const pending  = state.pendingTargets.includes(w);
@@ -825,11 +1012,19 @@
         else if (m === 1) cls += ' mastery-orange';
         if (!revealed) cls += ' hidden';
         div.className = cls;
+        div.dataset.keyword = w.keyword;
         const span = document.createElement('span');
-        span.className   = 'word-text';
+        span.className = 'word-text';
         span.textContent = w.keyword;
         div.appendChild(span);
         if (pending) div.addEventListener('click', () => showHint(w));
+
+        if (!prevItems.has(w.keyword)) {
+          div.classList.add('animating-in');
+          div.style.animationDelay = `${delay}ms`;
+          delay += 18;
+          div.addEventListener('animationend', () => div.classList.remove('animating-in'), { once: true });
+        }
         wordListEl.appendChild(div);
       }
     }
@@ -838,7 +1033,6 @@
       renderExtraCounter();
       renderGrid();
       renderWordList();
-      // Reset overlay visibility when re-entering idle
       modalOverlay.classList.remove('visible');
       feedbackOverlay.classList.remove('visible', 'correct', 'wrong', 'hint');
       selectionStrip.classList.remove('visible');
@@ -850,51 +1044,46 @@
     }
 
     function renderGrid() {
-      if (state.holdTimer !== null) {
-        clearTimeout(state.holdTimer);
-        state.holdTimer = null;
-      }
+      if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
       gridEl.innerHTML = '';
 
-      // Build single-kanji word status: 'present' (blue) or 'found' (green)
       const singleKanjiStatus = new Map();
       for (const w of state.allWords) {
         if (w.kanji.length !== 1) continue;
         const ch = w.kanji[0];
         if (!state.gridKanji.includes(ch)) continue;
-        const isFound = state.targets.has(w)
-          ? !state.pendingTargets.includes(w)
-          : state.extraFound.has(w);
+        const isFound = state.targets.has(w) ? !state.pendingTargets.includes(w) : state.extraFound.has(w);
         const cur = singleKanjiStatus.get(ch);
-        if (!cur || (isFound && cur !== 'found')) {
-          singleKanjiStatus.set(ch, isFound ? 'found' : 'present');
-        }
+        if (!cur || (isFound && cur !== 'found')) singleKanjiStatus.set(ch, isFound ? 'found' : 'present');
       }
 
       state.gridKanji.forEach((kanji, idx) => {
         const cell = document.createElement('div');
-        cell.className    = 'kanji-cell';
+        cell.className = 'kanji-cell';
         if (singleKanjiStatus.get(kanji) === 'present') cell.classList.add('word-present');
-        cell.textContent   = kanji;
+        cell.textContent = kanji;
         cell.dataset.kanji = kanji;
         cell.dataset.index = idx;
+
+        cell.classList.add('animating-in');
+        cell.style.animationDelay = `${idx * 16}ms`;
+        cell.addEventListener('animationend', () => {
+          cell.classList.remove('animating-in');
+          cell.style.animationDelay = '';
+        }, { once: true });
 
         cell.addEventListener('pointerdown', e => {
           e.preventDefault();
           if (state.mode !== 'idle' && state.mode !== 'selecting') return;
-
           if (state.mode === 'idle') {
             cell.setPointerCapture(e.pointerId);
-            // Start hold timer
             state.holdTimer = setTimeout(() => {
               state.holdTimer = null;
-              state.mode      = 'selecting';
-              state.selected  = [idx];
+              state.mode = 'selecting';
+              state.selected = [idx];
               updateSelectionStrip();
             }, 250);
           } else if (state.mode === 'selecting') {
-            // Append this cell (cell identity, not kanji string — so two
-            // cells sharing a kanji can both be picked for words like 日曜日).
             if (!state.selected.includes(idx)) {
               state.selected.push(idx);
               updateSelectionStrip();
@@ -906,16 +1095,14 @@
           if (state.holdTimer !== null) {
             clearTimeout(state.holdTimer);
             state.holdTimer = null;
-            // Single tap — fired before hold threshold
+            cell.classList.add('tapped');
+            cell.addEventListener('animationend', () => cell.classList.remove('tapped'), { once: true });
             submitSelection([kanji]);
           }
         });
 
         cell.addEventListener('pointercancel', () => {
-          if (state.holdTimer !== null) {
-            clearTimeout(state.holdTimer);
-            state.holdTimer = null;
-          }
+          if (state.holdTimer !== null) { clearTimeout(state.holdTimer); state.holdTimer = null; }
         });
 
         gridEl.appendChild(cell);
@@ -931,31 +1118,19 @@
     }
 
     function submitSelection(selectedKanji) {
-      state.mode     = 'idle';
-      state.selected = [];
+      state.mode = 'idle'; state.selected = [];
       updateSelectionStrip();
-
       const query = selectedKanji.join('');
       const word  = matchWord(query);
-
-      if (!word) {
-        showToast('No word for that selection');
-        return;
-      }
-
+      if (!word) { showToast('No word for that selection'); return; }
       showQuestion(word);
     }
 
     function matchWord(query) {
-      // Blocked targets are unmatchable for their remaining cooldown.
       const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
-      const matches = state.allWords.filter(
-        w => w.kanji.join('') === query && !isBlocked(w)
-      );
+      const matches = state.allWords.filter(w => w.kanji.join('') === query && !isBlocked(w));
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
-
-      // Multiple matches: prefer uncleared pending targets
       const pending = matches.filter(w => state.pendingTargets.includes(w));
       if (pending.length > 0) return pending[Math.floor(Math.random() * pending.length)];
       return matches[Math.floor(Math.random() * matches.length)];
@@ -970,11 +1145,8 @@
     }
 
     function showQuestion(word) {
-      state.currentWord  = word;
-      state.mode         = 'question';
-      state.tiles        = generateTiles(word);
-      state.kanaSelected = [];
-
+      state.currentWord = word; state.mode = 'question';
+      state.tiles = generateTiles(word); state.kanaSelected = [];
       modalWord.textContent = word.word;
 
       const tilesEl = $('kana-tiles');
@@ -984,6 +1156,13 @@
         btn.className = 'kana-tile';
         btn.textContent = kana;
         btn.dataset.tileIdx = idx;
+        btn.style.opacity = '0';
+        btn.style.transform = 'scale(0.82)';
+        btn.style.transition = `opacity 0.16s ease ${idx * 28}ms, transform 0.18s cubic-bezier(0.22,1,0.36,1) ${idx * 28}ms`;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          btn.style.opacity = '';
+          btn.style.transform = '';
+        }));
         btn.addEventListener('click', () => handleKanaTap(idx));
         tilesEl.appendChild(btn);
       });
@@ -996,14 +1175,15 @@
       if (state.mode !== 'question') return;
       const tileEl = $('kana-tiles').querySelector(`[data-tile-idx="${idx}"]`);
       if (!tileEl || tileEl.classList.contains('used')) return;
+      tileEl.classList.add('tapped');
+      tileEl.addEventListener('animationend', () => tileEl.classList.remove('tapped'), { once: true });
       tileEl.classList.add('used');
       state.kanaSelected.push(idx);
       updateKanaAnswer();
       if (state.kanaSelected.length === state.currentWord.hiragana.length) {
         const submitted = state.kanaSelected.map(i => state.tiles[i]);
         const isCorrect = submitted.every((k, i) => k === state.currentWord.hiragana[i]);
-        modalOverlay.classList.remove('visible');
-        handleAnswer(isCorrect);
+        setTimeout(() => { modalOverlay.classList.remove('visible'); handleAnswer(isCorrect); }, 180);
       }
     }
 
@@ -1014,24 +1194,17 @@
     function handleAnswer(isCorrect) {
       state.answeredCount++;
       if (!isCorrect) state.wrongCount++;
-
       const w = state.currentWord;
       const isTarget = state.targets.has(w);
-
       if (isTarget) {
         if (isCorrect) {
           state.revealedWords.add(w);
-          // Free pass: first correct tap after a hint doesn't advance
-          // mastery — the 3-count only starts on the next correct.
           if (state.hintPending.has(w)) {
             state.hintPending.delete(w);
           } else {
             const m = state.mastery.get(w) ?? 0;
-            if (m === 0 || m >= 2) {
-              state.pendingTargets = state.pendingTargets.filter(x => x !== w);
-            } else {
-              state.mastery.set(w, m === -1 ? 1 : m + 1);
-            }
+            if (m === 0 || m >= 2) state.pendingTargets = state.pendingTargets.filter(x => x !== w);
+            else state.mastery.set(w, m === -1 ? 1 : m + 1);
           }
         } else {
           if (!state.masteryExemptKeywords.has(w.keyword)) state.mastery.set(w, -1);
@@ -1041,44 +1214,34 @@
       } else if (isCorrect) {
         state.extraFound.add(w);
       }
-
       showFeedback(isCorrect);
     }
 
     function showFeedback(isCorrect) {
       state.mode = 'feedback';
-
       feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
       feedbackOverlay.classList.add(isCorrect ? 'correct' : 'wrong', 'visible');
-
-      feedbackIcon.textContent    = isCorrect ? '✓' : '✗';
-      feedbackWord.textContent    = state.currentWord.word;
+      feedbackIcon.textContent = isCorrect ? '✓' : '✗';
+      feedbackWord.textContent = state.currentWord.word;
       feedbackReading.textContent = state.currentWord.hiragana.join('');
       feedbackMeaning.textContent = state.currentWord.keyword;
-
-      if (isCorrect) {
-        setTimeout(dismissFeedback, CORRECT_DISMISS_MS);
-      }
-      // Wrong: waits for "Got it" button — handled by event listener
+      feedbackIcon.classList.remove('animating');
+      void feedbackIcon.offsetWidth;
+      feedbackIcon.classList.add('animating');
+      if (isCorrect) setTimeout(dismissFeedback, CORRECT_DISMISS_MS);
     }
 
     function showHint(word) {
       if (state.mode !== 'idle') return;
-      // Mastery drops to -1 (3 corrects to clear), but hintPending grants
-      // a free pass on the first correct tap — so net cost after hint is
-      // 1 free + 3 counting = 4 correct taps. No block, no rebuild —
-      // the user practices forming the word on the current grid.
       if (!state.masteryExemptKeywords.has(word.keyword)) state.mastery.set(word, -1);
       state.revealedWords.add(word);
       state.hintPending.add(word);
       state.currentWord = word;
-      state.mode        = 'feedback';
-
+      state.mode = 'feedback';
       feedbackOverlay.classList.remove('correct', 'wrong', 'hint');
       feedbackOverlay.classList.add('correct', 'hint', 'visible');
-
-      feedbackIcon.textContent    = '';
-      feedbackWord.textContent    = word.word;
+      feedbackIcon.textContent = '';
+      feedbackWord.textContent = word.word;
       feedbackReading.textContent = word.hiragana.join('');
       feedbackMeaning.textContent = word.keyword;
     }
@@ -1087,59 +1250,42 @@
       if (!feedbackOverlay.classList.contains('visible')) return;
       const wasHint = feedbackOverlay.classList.contains('hint');
       feedbackOverlay.classList.remove('visible', 'correct', 'wrong', 'hint');
-
-      if (state.pendingTargets.length === 0) {
-        showComplete();
-        return;
-      }
-
+      if (state.pendingTargets.length === 0) { showComplete(); return; }
       state.mode = 'idle';
-      // Hints don't rebuild — user practices forming the word on the
-      // current grid. Just refresh the word list (mastery colour may
-      // have changed).
       if (wasHint) renderWordList();
-      else         buildGridAndRender();
+      else buildGridAndRender();
     }
 
     function showComplete() {
       state.mode = 'complete';
       completeScreen.classList.add('visible');
-
-      const total   = state.targets.size;
+      const total = state.targets.size;
       const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-      const mins    = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const secs    = String(elapsed % 60).padStart(2, '0');
+      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
       const accuracy = state.answeredCount > 0
-        ? Math.round(((state.answeredCount - state.wrongCount) / state.answeredCount) * 100)
-        : 100;
-
+        ? Math.round(((state.answeredCount - state.wrongCount) / state.answeredCount) * 100) : 100;
       const cleared = total - state.pendingTargets.length;
-      $('stat-cleared').textContent  = `Words cleared: ${cleared} / ${total}`;
-      $('stat-attempts').textContent = `Total attempts: ${state.answeredCount}`;
-      $('stat-accuracy').textContent = `Accuracy: ${accuracy}%`;
-      $('stat-time').textContent     = `Time: ${mins}:${secs}`;
+      $('stat-cleared').innerHTML  = `<span>Cleared</span><strong>${cleared} / ${total}</strong>`;
+      $('stat-attempts').innerHTML = `<span>Attempts</span><strong>${state.answeredCount}</strong>`;
+      $('stat-accuracy').innerHTML = `<span>Accuracy</span><strong>${accuracy}%</strong>`;
+      $('stat-time').innerHTML     = `<span>Time</span><strong>${mins}:${secs}</strong>`;
     }
 
-    // ── Boot ─────────────────────────────────────────────────────────────────
-    // Integration-verified: 1309-entry dataset; session picks 25 random targets
-    // + bonus words from distractors (padded to >=25); full rebuild on every
-    // answer/hint; 3-reshuffle cooldown for wrong/hint targets.
+    // ── Boot ──────────────────────────────────────────────────────────────────
     const data = await fetch('./kandy_core_vocab.json').then(r => {
       if (!r.ok) throw new Error(`Failed to load data: ${r.status}`);
       return r.json();
     }).catch(err => {
-      document.body.innerHTML = `<p style="padding:24px;font-family:sans-serif;color:#c62828;">Could not load kandy_core_vocab.json. Serve this file over HTTP (e.g. python3 -m http.server).<br><small>${err.message}</small></p>`;
+      document.body.innerHTML = `<p style="padding:24px;font-family:sans-serif;color:#f06060;">Could not load kandy_core_vocab.json.<br><small>${err.message}</small></p>`;
       throw err;
     });
     state.dataset = data.words;
     state.datasetByKeyword = new Map(data.words.map(w => [w.keyword, w]));
     initSession();
 
-    // PWA: register the service worker for offline + installability.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(err => {
-        console.warn('SW registration failed', err);
-      });
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed', err));
     }
   </script>
 </body>
