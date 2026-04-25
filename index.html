@@ -1238,18 +1238,23 @@
       if (!isCorrect) state.wrongCount++;
       const w = state.currentWord;
       const isTarget = state.targets.has(w);
-      // Block iff the word stays in pendingTargets after this answer —
-      // i.e. the user still owes more correct taps to clear it. Cleared
+      // Block whenever the word stays in pendingTargets after this answer
+      // — i.e. the user still owes more correct taps to clear it. Cleared
       // targets and bonuses don't need a block: they won't be focused
-      // again, so they won't surface naturally. The free-pass branch
-      // (first correct after a hint) is also exempt — that tap shouldn't
-      // count toward mastery or trigger a block.
+      // again, so they won't surface naturally.
       let blockThisWord = false;
       if (isTarget) {
+        // Whether right or wrong, the user has now seen the word's
+        // reading and meaning in the feedback overlay — un-blur it in
+        // the panel so they can keep referring to it.
+        state.revealedWords.add(w);
         if (isCorrect) {
-          state.revealedWords.add(w);
           if (state.hintPending.has(w)) {
+            // Free pass: doesn't advance mastery, but still blocks for
+            // 3 rebuilds so the user can't immediately re-tap the word
+            // they just saw revealed.
             state.hintPending.delete(w);
+            blockThisWord = true;
           } else {
             const m = state.mastery.get(w) ?? 0;
             if (m === 0 || m >= 2) {
