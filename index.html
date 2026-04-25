@@ -62,11 +62,15 @@
       font-family: var(--font-grid);
       background: var(--bg);
       color: var(--text);
-      min-height: 100dvh;
+      /* Fixed-height shell: header + grid + word section together fill
+         the viewport, and the word list scrolls internally if its
+         content overflows the available space. */
+      height: 100dvh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 14px 32px;
+      padding: 0 14px 14px;
       user-select: none;
       -webkit-user-select: none;
     }
@@ -130,6 +134,8 @@
     #app {
       width: 100%;
       max-width: 500px;
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -242,6 +248,10 @@
       border-radius: 16px;
       box-shadow: inset 0 0 0 1px var(--border), 0 4px 16px rgba(0,0,0,0.3);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
 
     .section-row {
@@ -285,6 +295,11 @@
       grid-template-columns: 1fr 1fr;
       padding: 6px 6px 6px 25px;
       gap: 2px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      /* Smooth iOS-style momentum scrolling. */
+      -webkit-overflow-scrolling: touch;
     }
 
     .word-item {
