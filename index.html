@@ -330,6 +330,14 @@
       animation: wordIn 0.22s var(--ease-out) both;
     }
 
+    .word-item.just-revealed {
+      animation: revealFlash 1.2s var(--ease-out);
+    }
+    @keyframes revealFlash {
+      0%   { background: var(--accent-glow); }
+      100% { background: transparent; }
+    }
+
     .word-item.pending {
       cursor: pointer;
       color: #5a5650;
@@ -875,6 +883,14 @@
       const word = candidates[Math.floor(Math.random() * candidates.length)];
       state.revealedWords.add(word);
       renderWordList();
+      // Centre the freshly-revealed word in the scrollable list and
+      // briefly flash it so the user sees what changed.
+      const el = wordListEl.querySelector(`[data-keyword="${CSS.escape(word.keyword)}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('just-revealed');
+        el.addEventListener('animationend', () => el.classList.remove('just-revealed'), { once: true });
+      }
     });
 
     $('btn-restart').addEventListener('click', () => {
