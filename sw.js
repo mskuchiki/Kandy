@@ -1,4 +1,4 @@
-const CACHE = 'kandy-v2';
+const CACHE = 'kandy-v3';
 const ASSETS = [
   './',
   './index.html',
