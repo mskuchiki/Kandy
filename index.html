@@ -141,6 +141,16 @@
       gap: 12px;
     }
 
+    /* ── Grid section ──────────────────────────── */
+    #grid-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
     /* ── Grid ──────────────────────────────────── */
     #grid-container {
       display: grid;
@@ -242,33 +252,33 @@
       color: var(--text-muted);
     }
 
-    /* ── Word section ──────────────────────────── */
+    /* ── Word section (collapsible panel) ─────── */
     #word-section {
+      flex-shrink: 0;
       background: var(--surface);
       border-radius: 16px;
       box-shadow: inset 0 0 0 1px var(--border), 0 4px 16px rgba(0,0,0,0.3);
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      flex: 1;
-      min-height: 0;
     }
 
     .section-row {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      padding: 11px 14px;
-      border-bottom: 1px solid var(--border);
+      gap: 10px;
+      padding: 10px 14px 14px;
+      cursor: grab;
+      touch-action: none;
     }
+    .section-row:active { cursor: grabbing; }
 
-    .section-label {
-      font-family: var(--font-ui);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+    .drag-indicator {
+      width: 36px;
+      height: 4px;
+      background: var(--surface-3);
+      border-radius: 2px;
     }
 
     #btn-reveal {
@@ -295,11 +305,15 @@
       grid-template-columns: 1fr 1fr;
       padding: 6px 6px 6px 25px;
       gap: 2px;
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      /* Smooth iOS-style momentum scrolling. */
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
       -webkit-overflow-scrolling: touch;
+    }
+
+    #word-section.expanded #word-list {
+      max-height: 220px;
+      overflow-y: auto;
     }
 
     .word-item {
@@ -393,7 +407,7 @@
     /* ── Toast ─────────────────────────────────── */
     #toast {
       position: fixed;
-      bottom: 36px;
+      bottom: 88px;
       left: 50%;
       transform: translateX(-50%) translateY(10px);
       background: rgba(30, 28, 25, 0.94);
@@ -712,18 +726,19 @@
   </div>
 
   <div id="app">
-    <div id="grid-container"></div>
-
-    <div id="selection-strip">
-      <span class="strip-label">Selected</span>
-      <span id="selected-display"></span>
-      <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
-      <button id="btn-cancel"  class="strip-btn">✕</button>
+    <div id="grid-section">
+      <div id="grid-container"></div>
+      <div id="selection-strip">
+        <span class="strip-label">Selected</span>
+        <span id="selected-display"></span>
+        <button id="btn-confirm" class="strip-btn">✓ Confirm</button>
+        <button id="btn-cancel"  class="strip-btn">✕</button>
+      </div>
     </div>
 
     <div id="word-section">
       <div class="section-row">
-        <span class="section-label">Words</span>
+        <div class="drag-indicator"></div>
         <button id="btn-reveal">Reveal a word</button>
       </div>
       <div id="word-list"></div>
@@ -848,6 +863,35 @@
     const completeScreen  = $('complete-screen');
     const wordListEl      = $('word-list');
 
+    // ── Collapsible panel ─────────────────────────────────────────────────────
+    const wordSection  = $('word-section');
+    const sectionRow   = wordSection.querySelector('.section-row');
+    const expandPanel  = () => wordSection.classList.add('expanded');
+    const collapsePanel = () => wordSection.classList.remove('expanded');
+
+    let _dragStartY = null;
+    let _dragMoved  = false;
+
+    sectionRow.addEventListener('pointerdown', e => {
+      if ($('btn-reveal').contains(e.target)) return;
+      _dragStartY = e.clientY;
+      _dragMoved  = false;
+      sectionRow.setPointerCapture(e.pointerId);
+    });
+    sectionRow.addEventListener('pointermove', e => {
+      if (_dragStartY === null) return;
+      if (Math.abs(e.clientY - _dragStartY) > 8) _dragMoved = true;
+    });
+    sectionRow.addEventListener('pointerup', e => {
+      if (_dragStartY === null) return;
+      const delta = _dragStartY - e.clientY;
+      _dragStartY = null;
+      if (!_dragMoved)       wordSection.classList.toggle('expanded');
+      else if (delta > 30)   expandPanel();
+      else if (delta < -30)  collapsePanel();
+    });
+    sectionRow.addEventListener('pointercancel', () => { _dragStartY = null; });
+
     // ── Button handlers ───────────────────────────────────────────────────────
     $('btn-confirm').addEventListener('click', () => {
       if (state.mode !== 'selecting' || state.selected.length === 0) return;
@@ -876,6 +920,7 @@
     $('btn-got-it').addEventListener('click', dismissFeedback);
 
     $('btn-reveal').addEventListener('click', () => {
+      expandPanel();
       const candidates = state.formableWords.filter(w =>
         state.targets.has(w) && state.pendingTargets.includes(w) && !state.revealedWords.has(w)
       );
