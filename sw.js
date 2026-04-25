@@ -1,4 +1,4 @@
-const CACHE = 'kandy-v4';
+const CACHE = 'kandy-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -22,11 +22,31 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Cache-first, falling back to network; populates cache on network hit.
-// On navigation failure, serves the cached app shell so the app still
-// opens when offline.
+// Strategy:
+//   - Navigation/HTML requests: network-first, fall back to cache when
+//     offline. This guarantees that as long as the user is online they
+//     always see the latest UI — no more "stuck on yesterday's build".
+//   - Everything else (JSON, icons, fonts): cache-first for speed.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const isNav = e.request.mode === 'navigate'
+             || e.request.destination === 'document';
+
+  if (isNav) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.ok && res.type === 'basic') {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
+        return res;
+      }).catch(() =>
+        caches.match(e.request).then(hit => hit || caches.match('./index.html'))
+      )
+    );
+    return;
+  }
+
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       if (res && res.ok && res.type === 'basic') {
@@ -34,9 +54,6 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, copy));
       }
       return res;
-    }).catch(() => {
-      if (e.request.mode === 'navigate') return caches.match('./index.html');
-      throw new Error('offline');
-    }))
+    }).catch(() => { throw new Error('offline'); }))
   );
 });
