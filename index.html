@@ -300,20 +300,24 @@
     }
 
     /* ── Word list ─────────────────────────────── */
+    #panel-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #word-section.expanded #panel-body {
+      max-height: 220px;
+    }
+
     #word-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
       padding: 6px 6px 6px 25px;
       gap: 2px;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
-      -webkit-overflow-scrolling: touch;
-    }
-
-    #word-section.expanded #word-list {
       max-height: 220px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .word-item {
@@ -739,9 +743,11 @@
     <div id="word-section">
       <div class="section-row">
         <div class="drag-indicator"></div>
-        <button id="btn-reveal">Reveal a word</button>
+        <button id="btn-reveal">reveal one formable word</button>
       </div>
-      <div id="word-list"></div>
+      <div id="panel-body">
+        <div id="word-list"></div>
+      </div>
     </div>
   </div>
 
