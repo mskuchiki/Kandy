@@ -939,6 +939,8 @@
       }
 
       const clearedTargets = [...state.targets].filter(w => !state.pendingTargets.includes(w));
+      // Strict block check for the pack step. The focus fallback above
+      // already rescues the all-pending-blocked edge case.
       const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
       const packOrder = [
         ...shuffle(state.pendingTargets.filter(w => w !== focus && !isBlocked(w))),
@@ -962,7 +964,7 @@
 
       const shuffled = shuffle(gridKanji).slice(0, GRID_SIZE);
       const formableWords = state.allWords.filter(
-        w => w.kanji.length > 0 && !isBlocked(w) && isSubMultiset(w.kanji, shuffled)
+        w => w.kanji.length > 0 && !softBlocked(w) && isSubMultiset(w.kanji, shuffled)
       );
       return { gridKanji: shuffled, formableWords };
     }
@@ -977,6 +979,16 @@
         else needed.push(ch);
       }
       return needed;
+    }
+
+    // Soft-block check used by formable/match. Mirrors the focus fallback
+    // in tryBuildGrid: when EVERY pending target is blocked the user would
+    // otherwise have nothing tappable, so we drop the block for pending
+    // targets only. Bonuses and cleared targets stay hard-blocked.
+    function softBlocked(w) {
+      if ((state.blockedTargets.get(w) ?? 0) === 0) return false;
+      if (!state.pendingTargets.includes(w)) return true;
+      return state.pendingTargets.some(t => (state.blockedTargets.get(t) ?? 0) === 0);
     }
 
     const CORRECT_DISMISS_MS = 1800;
@@ -1127,8 +1139,7 @@
     }
 
     function matchWord(query) {
-      const isBlocked = w => (state.blockedTargets.get(w) ?? 0) > 0;
-      const matches = state.allWords.filter(w => w.kanji.join('') === query && !isBlocked(w));
+      const matches = state.allWords.filter(w => w.kanji.join('') === query && !softBlocked(w));
       if (matches.length === 0) return null;
       if (matches.length === 1) return matches[0];
       const pending = matches.filter(w => state.pendingTargets.includes(w));
@@ -1196,6 +1207,13 @@
       if (!isCorrect) state.wrongCount++;
       const w = state.currentWord;
       const isTarget = state.targets.has(w);
+      // Block iff the word stays in pendingTargets after this answer —
+      // i.e. the user still owes more correct taps to clear it. Cleared
+      // targets and bonuses don't need a block: they won't be focused
+      // again, so they won't surface naturally. The free-pass branch
+      // (first correct after a hint) is also exempt — that tap shouldn't
+      // count toward mastery or trigger a block.
+      let blockThisWord = false;
       if (isTarget) {
         if (isCorrect) {
           state.revealedWords.add(w);
@@ -1203,17 +1221,22 @@
             state.hintPending.delete(w);
           } else {
             const m = state.mastery.get(w) ?? 0;
-            if (m === 0 || m >= 2) state.pendingTargets = state.pendingTargets.filter(x => x !== w);
-            else state.mastery.set(w, m === -1 ? 1 : m + 1);
+            if (m === 0 || m >= 2) {
+              state.pendingTargets = state.pendingTargets.filter(x => x !== w);
+            } else {
+              state.mastery.set(w, m === -1 ? 1 : m + 1);
+              blockThisWord = true;
+            }
           }
         } else {
           if (!state.masteryExemptKeywords.has(w.keyword)) state.mastery.set(w, -1);
-          state.blockedTargets.set(w, 3);
           state.hintPending.delete(w);
+          blockThisWord = true;
         }
       } else if (isCorrect) {
         state.extraFound.add(w);
       }
+      if (blockThisWord) state.blockedTargets.set(w, 3);
       showFeedback(isCorrect);
     }
 
